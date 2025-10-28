@@ -3,7 +3,16 @@
 export async function verifyEmailWithKitt(email: string) {
   try {
     // Zeruh API uses GET request with query parameters
-    const apiKey = "bab915fb9d509a615f7bfcfe07d594fa281885252e1911e60cc206fdf0a495b9"
+    const apiKey = process.env.ZERUH_API_KEY
+    
+    if (!apiKey) {
+      console.error("[v0] Zeruh API key not configured")
+      return {
+        success: false,
+        error: "Email verification service not configured",
+      }
+    }
+    
     const url = `https://api.zeruh.com/v1/verify?api_key=${apiKey}&email_address=${encodeURIComponent(email)}`
 
     const response = await fetch(url, {

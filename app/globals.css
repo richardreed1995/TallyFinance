@@ -1,6 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-1px); }
+  20%, 40%, 60%, 80% { transform: translateX(1px); }
+}
+
+.animate-shake {
+  animation: shake 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -10,13 +20,22 @@
   --card-foreground: oklch(0.25 0.02 165);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0.02 165);
-  --primary: oklch(0.28 0.04 165);
+  --primary: oklch(0.6 0.15 280);
   --primary-foreground: oklch(0.99 0.005 85);
-  --secondary: oklch(0.52 0.02 155);
+  --secondary: oklch(0.7 0.12 320);
   --secondary-foreground: oklch(0.99 0.005 85);
-  --muted: oklch(0.96 0.005 85);
+  --muted: oklch(0.96 0.02 280);
   --muted-foreground: oklch(0.48 0.01 165);
-  --accent: oklch(0.68 0.08 75);
+  --accent: oklch(0.7 0.12 220);
+  
+  /* Tally Brand Colors */
+  --tally-purple: oklch(0.6 0.15 280);
+  --tally-coral: oklch(0.7 0.12 320);
+  --tally-blue: oklch(0.7 0.12 220);
+  --tally-lavender: oklch(0.8 0.08 280);
+  --tally-charcoal: oklch(0.2 0.01 165);
+  --tally-light-grey: oklch(0.96 0.02 280);
+  --tally-mid-grey: oklch(0.4 0.01 165);
   --accent-foreground: oklch(0.25 0.02 165);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.99 0.005 85);
@@ -70,9 +89,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-serif: "Playfair Display", serif;
+  --font-serif: var(--font-space-grotesk), serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -117,5 +136,88 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Tally Brand Gradients */
+  .bg-tally-purple-gradient {
+    background: linear-gradient(135deg, oklch(0.6 0.15 280) 0%, oklch(0.8 0.08 280) 100%);
+  }
+  
+  .bg-tally-coral-gradient {
+    background: linear-gradient(135deg, oklch(0.7 0.12 320) 0%, oklch(0.8 0.08 320) 100%);
+  }
+  
+  .bg-tally-blue-gradient {
+    background: linear-gradient(135deg, oklch(0.7 0.12 220) 0%, oklch(0.8 0.08 220) 100%);
+  }
+  
+  /* Tally Brand Colors */
+  .text-tally-purple {
+    color: oklch(0.6 0.15 280);
+  }
+  
+  .text-tally-coral {
+    color: oklch(0.7 0.12 320);
+  }
+  
+  .text-tally-blue {
+    color: oklch(0.7 0.12 220);
+  }
+  
+  .text-tally-lavender {
+    color: oklch(0.8 0.08 280);
+  }
+  
+  .text-tally-charcoal {
+    color: oklch(0.2 0.01 165);
+  }
+  
+  .text-tally-mid-grey {
+    color: oklch(0.4 0.01 165);
+  }
+  
+  .bg-tally-purple {
+    background-color: oklch(0.6 0.15 280);
+  }
+  
+  .bg-tally-coral {
+    background-color: oklch(0.7 0.12 320);
+  }
+  
+  .bg-tally-blue {
+    background-color: oklch(0.7 0.12 220);
+  }
+  
+  .bg-tally-lavender {
+    background-color: oklch(0.8 0.08 280);
+  }
+  
+  .bg-tally-light-grey {
+    background-color: oklch(0.96 0.02 280);
+  }
+  
+  .border-tally-purple {
+    border-color: oklch(0.6 0.15 280);
+  }
+  
+  .border-tally-coral {
+    border-color: oklch(0.7 0.12 320);
+  }
+  
+  .border-tally-blue {
+    border-color: oklch(0.7 0.12 220);
+  }
+  
+  /* Custom Animations */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+  }
+  
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
   }
 }

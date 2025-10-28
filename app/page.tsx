@@ -1,79 +1,140 @@
+"use client"
+
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Shield, Globe, TrendingUp, Users, Building2, Sparkles } from "lucide-react"
+import { ArrowRight, Shield, Globe, TrendingUp, Users, Building2, Sparkles, Zap, Clock, CheckCircle, ChevronDown, ChevronUp } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
+import { useState, useEffect } from "react"
 
 export default function HomePage() {
+  const [openFAQ, setOpenFAQ] = useState<number | null>(null)
+  const [showButtonShake, setShowButtonShake] = useState(false)
+
+  const toggleFAQ = (index: number) => {
+    setOpenFAQ(openFAQ === index ? null : index)
+  }
+
+  useEffect(() => {
+    // Trigger shake animation for "Apply now" button
+    const timer = setTimeout(() => {
+      setShowButtonShake(true)
+      setTimeout(() => setShowButtonShake(false), 1000) // Stop shaking after 1 second
+    }, 500) // Start shaking after 500ms delay
+    
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <div className="min-h-screen">
       <Header />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="container mx-auto max-w-5xl text-center">
-          <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-balance mb-6 text-foreground">
-            Perspective. Clarity. Wealth for Generations.
-          </h1>
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
-            Your independent multi-family office serving ambitious entrepreneurs, internationally active families, and
-            discerning wealth creators who demand more than conventional wealth management.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/assessment">
-              <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8">
-                Take Wealth Assessment
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="#services">
-              <Button size="lg" variant="outline" className="text-base px-8 bg-transparent">
-                Explore Services
-              </Button>
-            </Link>
+      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F8F1EC' }}>
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="text-center lg:text-left">
+              <div className="flex justify-center lg:justify-start mb-6">
+                <Image src="/trustpilot-logo.png" alt="Trustpilot" width={200} height={50} className="h-12 w-auto" />
+              </div>
+              <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-balance mb-6 text-foreground font-bold">
+                See if you qualify for a business loan
+              </h1>
+              <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed mb-8">
+                Get up to £2 million to grow your business and turn your plans into reality. Check your eligibility in 1 minute and access same-day funding.
+              </p>
+              <div className="flex justify-center lg:justify-start">
+                <Link href="/assessment" className="w-full sm:w-auto">
+                  <Button size="lg" className={`group w-full sm:w-auto bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-2xl sm:text-xl px-24 sm:px-20 py-8 sm:py-6 rounded-xl font-bold shadow-2xl hover:shadow-tally-purple/50 transition-all duration-300 ${showButtonShake ? 'animate-shake' : ''}`}>
+                    Apply now
+                    <ArrowRight className="ml-3 h-7 w-7 group-hover:animate-bounce" />
+                  </Button>
+                </Link>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 mt-8 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-tally-purple" />
+                  <span>Credit score not affected</span>
+                </div>
+                <div className="hidden sm:flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-tally-purple" />
+                  <span>Takes under 2 minutes</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="hidden lg:block">
+              <div className="relative">
+                <Image 
+                  src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory.jpg" 
+                  alt="Business team collaboration" 
+                  width={600} 
+                  height={400} 
+                  className="w-full h-auto rounded-lg shadow-lg"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile Image */}
+          <div className="lg:hidden mt-12">
+            <div className="relative">
+              <Image 
+                src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory.jpg" 
+                alt="Business team collaboration" 
+                width={600} 
+                height={400} 
+                className="w-full h-auto rounded-lg shadow-lg"
+              />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Why Vista Section */}
-      <section id="why-vista" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
+      {/* Why Tally Section */}
+      <section id="why-tally" className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance">Why Vista?</h2>
+          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance font-bold">Why Tally?</h2>
           <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto leading-relaxed">
-            We see what others miss. We plan beyond the horizon.
+            We make business loans simple, transparent, and accessible. No hassle, no hidden fees, no months of waiting.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Card className="border-border bg-card">
               <CardContent className="pt-8 pb-8">
-                <Shield className="h-12 w-12 text-primary mb-4" />
-                <h3 className="font-serif text-2xl mb-3">Uncompromising Independence</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  No institutional affiliations. No product bias. No conflicts of interest. Our only loyalty is to you
-                  and your family's long-term prosperity.
+                <div className="w-12 h-12 bg-tally-blue rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-2xl mb-3 text-tally-charcoal">Speed</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Apply in minutes, approved in hours, funded in days. We move at the speed your business needs.
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border bg-card">
               <CardContent className="pt-8 pb-8">
-                <Globe className="h-12 w-12 text-primary mb-4" />
-                <h3 className="font-serif text-2xl mb-3">Global Sophistication</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Whether your wealth spans multiple jurisdictions, currencies, or asset classes, we bring clarity to
-                  complexity with world-class opportunities.
+                <div className="w-12 h-12 bg-tally-coral rounded-lg flex items-center justify-center mb-4">
+                  <Globe className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-2xl mb-3 text-tally-charcoal">Ease</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Just tell us the basics about your business. It's quick, easy, and only takes a minute. An enquiry won't affect your credit.
                 </p>
               </CardContent>
             </Card>
 
             <Card className="border-border bg-card">
               <CardContent className="pt-8 pb-8">
-                <TrendingUp className="h-12 w-12 text-primary mb-4" />
-                <h3 className="font-serif text-2xl mb-3">Built for Generations</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Wealth that endures requires more than returns—it demands governance, succession planning, and values
-                  that transcend generations.
+                <div className="w-12 h-12 bg-tally-purple rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-2xl mb-3 text-tally-charcoal">Matching</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  We match you to the best fit FCA regulated lender to handle your enquiry.
                 </p>
               </CardContent>
             </Card>
@@ -81,184 +142,223 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* 3 Steps Process */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance">Our Services</h2>
+          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance font-bold">How it works</h2>
           <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto leading-relaxed">
-            Institutional-grade solutions with boutique attention
+            This is an extremely simple and straightforward process that ranges between 24 hours and one week, depending on your particular business.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Discretionary & Advisory Portfolio Management</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Bespoke, multi-asset portfolios constructed and managed to your exact specifications—with full
-                  transparency and institutional oversight.
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-tally-purple rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">01</span>
+              </div>
+              <h3 className="font-serif text-2xl mb-4 text-tally-charcoal font-bold">See if you qualify</h3>
+              <p className="text-tally-mid-grey leading-relaxed">
+                Click the purple "Apply Now" button on this page and fill out your basic business information. It's quick, easy, and only takes a minute
+              </p>
+            </div>
 
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Private Markets & Alternative Investments</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Exclusive access to private equity, private credit, real assets, and co-investment opportunities
-                  typically reserved for institutions.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-tally-blue rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">02</span>
+              </div>
+              <h3 className="font-serif text-2xl mb-4 text-tally-charcoal font-bold">Review your offers</h3>
+              <p className="text-tally-mid-grey leading-relaxed">
+                With access to multiple FCA regulated brokers, we compare every option and present you with the best offer for your business.
+              </p>
+            </div>
 
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Cross-Border Wealth Structuring</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Tax-efficient structures, offshore solutions, and multi-jurisdictional planning delivered through our
-                  network of regulated entities worldwide.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Family Office Services</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Consolidated reporting, succession strategy, philanthropy planning, and coordination with your
-                  existing advisors—all from a single, trusted partner.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Digital Asset Integration</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  We welcome crypto-originated wealth and provide secure custody solutions for clients with digital
-                  asset exposure—delivered through regulated partners.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6 pb-6">
-                <h3 className="font-serif text-xl mb-2">Lifestyle & Specialist Assets</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Curated access to luxury real estate, art, aviation, yachts, and collectibles through our vetted
-                  network of global specialists.
-                </p>
-              </CardContent>
-            </Card>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-tally-coral rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-2xl font-bold text-white">03</span>
+              </div>
+              <h3 className="font-serif text-2xl mb-4 text-tally-charcoal font-bold">Approved & funded in 4 hrs</h3>
+              <p className="text-tally-mid-grey leading-relaxed">
+                Once approved, and with your documents ready, you will get your loan in just a few hours.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* The Vista Difference */}
+      {/* Loan Purposes Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8 bg-muted/30">
         <div className="container mx-auto max-w-6xl">
-          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-16 text-balance">The Vista Difference</h2>
+          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance font-bold">What can you use a loan for?</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-tally-purple rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="h-6 w-6 text-white" />
                 </div>
-              </div>
-              <div>
-                <h3 className="font-serif text-xl mb-2">Aligned Interests</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  We invest alongside our clients. Your success is our success—financially and reputationally.
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Growth & expansion</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Open a new shop, hire more hands, or push your business into new places.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-tally-blue rounded-lg flex items-center justify-center mb-4">
+                  <Clock className="h-6 w-6 text-white" />
                 </div>
-              </div>
-              <div>
-                <h3 className="font-serif text-xl mb-2">Boutique Agility, Global Reach</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Locally regulated entities across key jurisdictions, delivering compliance and client protection
-                  without bureaucracy.
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Cashflow</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Cover the quiet months so you can pay staff, suppliers, and keep things ticking.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-primary" />
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-tally-coral rounded-lg flex items-center justify-center mb-4">
+                  <Building2 className="h-6 w-6 text-white" />
                 </div>
-              </div>
-              <div>
-                <h3 className="font-serif text-xl mb-2">Technology-Enabled Clarity</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Real-time portfolio access, consolidated reporting, and transparent performance analytics—all on a
-                  secure, intuitive platform.
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Stocking up</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Buy the stock you need now, so you're ready when your customers are.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-4">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Shield className="h-6 w-6 text-primary" />
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4">
+                  <Zap className="h-6 w-6 text-white" />
                 </div>
-              </div>
-              <div>
-                <h3 className="font-serif text-xl mb-2">Discretion as Standard</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Privacy isn't a luxury—it's a foundation. Your affairs remain confidential, always.
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Upgrading equipment</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Get that shiny new oven, van, or laptop that helps you work faster and better.
                 </p>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Covering unexpected bills</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Fix that faulty fridge, replace a leaky roof, or pay a surprise invoice without stress.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border bg-card">
+              <CardContent className="pt-8 pb-8">
+                <div className="w-12 h-12 bg-indigo-500 rounded-lg flex items-center justify-center mb-4">
+                  <Sparkles className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-xl mb-3 text-tally-charcoal font-bold">Renovations</h3>
+                <p className="text-tally-mid-grey leading-relaxed">
+                  Refresh your space with a makeover that attracts more customers and keeps your business looking sharp.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
-      {/* Who We Serve */}
-      <section id="who-we-serve" className="py-20 px-4 sm:px-6 lg:px-8">
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-4xl">
-          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance">Who We Serve</h2>
+          <h2 className="font-serif text-4xl sm:text-5xl text-center mb-4 text-balance font-bold">FAQ</h2>
           <p className="text-center text-muted-foreground mb-12 leading-relaxed">
-            Wealth creators who demand more than conventional management
+            Everything you need to know about our business loans
           </p>
 
           <div className="space-y-4">
             {[
-              "Entrepreneurs and founders navigating liquidity events",
-              "International families with cross-border complexity",
-              "Next-generation wealth inheritors seeking modern stewardship",
-              "Family offices requiring independent oversight and access to institutional opportunities",
-              "Professionals and executives building meaningful, multi-generational wealth",
-            ].map((item, index) => (
-              <div key={index} className="flex items-start gap-3 p-4 rounded-lg hover:bg-muted/30 transition-colors">
-                <Users className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <p className="text-foreground leading-relaxed">{item}</p>
-              </div>
+              {
+                question: "1. How quickly can I get my money?",
+                answer: "Once approved and with your documents ready, you can receive your funds in as little as 4 hours, with same-day funding available."
+              },
+              {
+                question: "2. Will checking my eligibility affect my credit score?",
+                answer: "No, our initial eligibility check is a soft search and won't impact your credit score. Only when you proceed with a specific lender's full application will a hard credit check be performed."
+              },
+              {
+                question: "3. How much can I borrow?",
+                answer: "You can access business loans from £5,000 up to £2 million, depending on your business needs and eligibility."
+              },
+              {
+                question: "4. What do I need to apply?",
+                answer: "Just basic information about your business. The application is quick and easy, taking only about a minute to complete."
+              },
+              {
+                question: "5. What are the eligibility requirements?",
+                answer: "Generally, you need to be a UK-registered Ltd or LLP trading for 12+ months, with regular turnover. Each lender has specific criteria, but we'll match you with those most likely to approve your application."
+              },
+              {
+                question: "6. What is Tally exactly—are you a lender?",
+                answer: "Tally is a loan matching service. We connect you with the best FCA-regulated brokers who can offer you the most suitable loan for your business."
+              },
+              {
+                question: "7. Are there any fees to use Tally?",
+                answer: "Our service is completely free to you. We're paid by lenders if they successfully provide you with funding. If a lender charges arrangement or broker fees, they must disclose this upfront before you proceed."
+              },
+              {
+                question: "8. Do I need to provide security or collateral?",
+                answer: "It depends on the loan type and amount. We offer both secured loans (backed by property or assets) and unsecured loans (no collateral required). We'll help you understand which option suits your situation best."
+              },
+              {
+                question: "9. What documents will I need?",
+                answer: "Typically: 3-6 months' business bank statements, recent accounts (filed or management accounts), Companies House details, director ID and proof of address, and an explanation of funding purpose. Requirements vary by lender."
+              },
+              {
+                question: "10. How do I know if I'm getting a good rate?",
+                answer: "We connect you with multiple lenders, so you can compare offers. Rates depend on your business profile, loan amount, term, and security provided. We'll help you understand the offers and choose the best fit for your business."
+              }
+            ].map((faq, index) => (
+              <Card key={index} className="border-border bg-card cursor-pointer hover:bg-gray-50 transition-colors">
+                <CardContent 
+                  className="pt-4 pb-4"
+                  onClick={() => toggleFAQ(index)}
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-serif text-lg text-tally-charcoal font-bold pr-4">
+                      {faq.question}
+                    </h3>
+                    {openFAQ === index ? (
+                      <ChevronUp className="h-5 w-5 text-tally-purple flex-shrink-0" />
+                    ) : (
+                      <ChevronDown className="h-5 w-5 text-tally-purple flex-shrink-0" />
+                    )}
+                  </div>
+                  {openFAQ === index && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <p className="text-tally-mid-grey leading-relaxed text-sm">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-primary text-primary-foreground">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-tally-purple text-white">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="font-serif text-4xl sm:text-5xl mb-6 text-balance">Begin the Conversation</h2>
-          <p className="text-lg text-primary-foreground/90 mb-8 leading-relaxed max-w-2xl mx-auto">
-            Wealth management should start with listening, not products. Let's discuss what matters most to you—your
-            ambitions, your family's future, and the legacy you wish to build.
+          <h2 className="font-serif text-4xl sm:text-5xl mb-6 text-balance font-bold">Ready to get started?</h2>
+          <p className="text-lg text-white/90 mb-8 leading-relaxed max-w-2xl mx-auto">
+            Apply in minutes, approved in hours, funded in days. Simple, transparent business loans that add up.
           </p>
           <Link href="/assessment">
             <Button
               size="lg"
-              className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-base px-8"
+              className="bg-white text-tally-purple hover:bg-white/90 text-base px-8 rounded-full"
             >
-              Take Your Wealth Assessment
+              Apply now
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
