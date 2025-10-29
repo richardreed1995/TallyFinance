@@ -57,13 +57,47 @@ export default function AssessmentPage() {
   const [isLoadingOfficers, setIsLoadingOfficers] = useState(false)
   const [showDirectorsSelection, setShowDirectorsSelection] = useState(false)
   const [showYesShake, setShowYesShake] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  // Initialize assessment record when component mounts
+  useEffect(() => {
+    const initializeAssessment = async () => {
+      const savedSubmissionId = sessionStorage.getItem("submissionId")
+      if (savedSubmissionId) {
+        setSubmissionId(savedSubmissionId)
+        setIsInitializing(false)
+        console.log("[v0] Using existing submission ID:", savedSubmissionId)
+      } else {
+        // Create new assessment record immediately
+        console.log("[v0] Creating new assessment record...")
+        try {
+          const result = await updateAssessmentProgress({
+            currentQuestion: 0,
+            answers: {},
+            isCompleted: false
+          })
+          
+          if (result.success && result.data) {
+            const newSubmissionId = result.data.id
+            setSubmissionId(newSubmissionId)
+            sessionStorage.setItem("submissionId", newSubmissionId)
+            setIsInitializing(false)
+            console.log("[v0] Created new assessment record with ID:", newSubmissionId)
+          } else {
+            console.error("[v0] Failed to create assessment record:", result.error)
+            setIsInitializing(false)
+          }
+        } catch (error) {
+          console.error("[v0] Error creating assessment record:", error)
+          setIsInitializing(false)
+        }
+      }
+    }
+
+    initializeAssessment()
+  }, []) // Only run once on mount
 
   useEffect(() => {
-    const savedSubmissionId = sessionStorage.getItem("submissionId")
-    if (savedSubmissionId) {
-      setSubmissionId(savedSubmissionId)
-    }
-    
     // Handle question parameter from Companies House lookup
     const questionParam = searchParams.get("question")
     if (questionParam) {
@@ -96,6 +130,23 @@ export default function AssessmentPage() {
       setLoanAmount(loanAmountSlider[0])
     }
   }, [loanAmountSlider])
+
+  // Save progress when loan amount or turnover changes
+  useEffect(() => {
+    if (submissionId && (loanAmount !== null || turnover !== null)) {
+      const updatedAnswers = { ...answers }
+      if (loanAmount !== null && currentQuestion === 1) { // Question 2 is loan amount
+        updatedAnswers[2] = [0] // Default option for scoring
+      }
+      if (turnover !== null && currentQuestion === 3) { // Question 4 is turnover
+        updatedAnswers[4] = [0] // Default option for scoring
+      }
+      
+      if (Object.keys(updatedAnswers).length > 0) {
+        saveProgress(updatedAnswers)
+      }
+    }
+  }, [loanAmount, turnover, submissionId])
 
   // Handle browser back button
   useEffect(() => {
@@ -185,12 +236,70 @@ export default function AssessmentPage() {
         date_of_creation: company.date_of_creation,
         address_snippet: company.address_snippet
       }))
+
+      // Save company information to database immediately
+      if (submissionId) {
+        try {
+          await updateAssessmentProgress({
+            submissionId: submissionId,
+            companyNumber: company.company_number,
+            companyName: company.title,
+            companyStatus: company.company_status,
+            companyType: company.company_type,
+            companyIncorporationDate: company.date_of_creation,
+            companyAddress: {
+              address_snippet: company.address_snippet,
+              // We'll get full address details from getCompanyDetails if needed
+            }
+          })
+          console.log("[v0] Saved company info to database:", company.title)
+        } catch (dbError) {
+          console.error("[v0] Error saving company info to database:", dbError)
+        }
+      }
+      
+      // Fetch detailed company information
+      const detailsResult = await getCompanyDetails(company.company_number)
+      if (detailsResult.success && detailsResult.data) {
+        const details = detailsResult.data
+        
+        // Update database with detailed company information
+        if (submissionId) {
+          try {
+            await updateAssessmentProgress({
+              submissionId: submissionId,
+              companyAddress: details.registered_office_address,
+              companySicCodes: details.sic_codes,
+              companyDescription: details.description,
+              companyJurisdiction: details.jurisdiction,
+              companyTypeFull: details.company_type,
+              // Add any other fields from the detailed company data
+            })
+            console.log("[v0] Updated company details in database")
+          } catch (dbError) {
+            console.error("[v0] Error updating company details:", dbError)
+          }
+        }
+      }
       
       // Fetch company officers/directors
       setIsLoadingOfficers(true)
       const officersResult = await getCompanyOfficers(company.company_number)
       
       if (officersResult.success && officersResult.data) {
+        // Save all company officers to database
+        if (submissionId) {
+          try {
+            await updateAssessmentProgress({
+              submissionId: submissionId,
+              companyOfficers: officersResult.data.items
+            })
+            console.log("[v0] Saved all company officers to database:", officersResult.data.items.length, "officers")
+          } catch (dbError) {
+            console.error("[v0] Error saving company officers:", dbError)
+          }
+        }
+        
         // Filter for directors only
         const directors = officersResult.data.items.filter((officer: any) => 
           officer.officer_role.toLowerCase().includes('director')
@@ -236,6 +345,23 @@ export default function AssessmentPage() {
     const formattedName = formatDirectorName(director.name)
     setName(formattedName)
     
+    // Save comprehensive director information to database
+    if (submissionId) {
+      try {
+        updateAssessmentProgress({
+          submissionId: submissionId,
+          directorName: director.name,
+          directorRole: director.officer_role,
+          directorAppointedDate: director.appointed_on,
+          directorNationality: director.nationality,
+          directorOccupation: director.occupation,
+        })
+        console.log("[v0] Saved comprehensive director info to database:", director.name)
+      } catch (dbError) {
+        console.error("[v0] Error saving director info:", dbError)
+      }
+    }
+    
     // Continue to next question and then hide directors selection
     setTimeout(() => {
       if (currentQuestion < questions.length - 1) {
@@ -266,22 +392,12 @@ export default function AssessmentPage() {
 
   const saveEmailToSupabase = async (emailAddress: string) => {
     try {
+      const databaseFields = mapAnswersToDatabaseFields(answers)
+      
       await updateAssessmentProgress({
         submissionId: submissionId || undefined,
         email: emailAddress,
-        ageRange: getAnswerLabel(1, answers),
-        advisorCommunication: getAnswerLabel(2, answers),
-        netWorth: getAnswerLabel(3, answers),
-        diversification: getAnswerLabel(4, answers),
-        feeStructure: getAnswerLabel(5, answers),
-        taxStrategy: getAnswerLabel(6, answers),
-        financialAdvisor: getAnswerLabel(7, answers),
-        primaryGoal: getAnswerLabel(8, answers),
-        estatePlan: getAnswerLabel(9, answers),
-        riskTolerance: getAnswerLabel(10, answers),
-        investmentPortfolio: getAnswerLabel(11, answers),
-        rebalancing: getAnswerLabel(12, answers),
-        investmentPerformance: getAnswerLabel(13, answers),
+        ...databaseFields
       })
     } catch (error) {
       console.error("[v0] Error saving email to Supabase:", error)
@@ -305,42 +421,88 @@ export default function AssessmentPage() {
     }
   }
 
-  const saveProgress = (updatedAnswers: Record<number, number[]>) => {
+  // Helper function to map answers to database fields
+  const mapAnswersToDatabaseFields = (updatedAnswers: Record<number, number[]>) => {
+    const question1Answer = updatedAnswers[1]?.[0] // Business owner question
+    const question2Answer = updatedAnswers[2]?.[0] // Loan amount question  
+    const question3Answer = updatedAnswers[3]?.[0] // Trading time question
+    const question4Answer = updatedAnswers[4]?.[0] // Annual turnover question
+    const question5Answer = updatedAnswers[5]?.[0] // Company type question
+    const question6Answer = updatedAnswers[6]?.[0] // Finance purpose question
+    const question7Answer = updatedAnswers[7]?.[0] // Credit profile question
+    const question8Answer = updatedAnswers[8]?.[0] // Homeowner question
+
+    return {
+      question1BusinessOwner: question1Answer === 0, // "Yes" option
+      question2LoanAmount: loanAmount,
+      question3TradingTime: question3Answer !== undefined ? questions[2].options[question3Answer]?.label : undefined,
+      question4AnnualTurnover: turnover,
+      question5CompanyType: question5Answer !== undefined ? questions[4].options[question5Answer]?.label : undefined,
+      question6FinancePurpose: question6Answer !== undefined ? questions[5].options[question6Answer]?.label : undefined,
+      question7CreditProfile: question7Answer !== undefined ? questions[6].options[question7Answer]?.label : undefined,
+      question8Homeowner: question8Answer === 0, // "Yes" option
+      currentQuestion: currentQuestion + 1,
+      answers: updatedAnswers,
+      isCompleted: false
+    }
+  }
+
+  const saveProgress = async (updatedAnswers: Record<number, number[]>) => {
     console.log("[v0] Saving progress to Supabase:", {
       submissionId,
-      email,
       answers: updatedAnswers,
       currentQuestion: currentQuestion + 1
     })
 
-    updateAssessmentProgress({
-      submissionId: submissionId || undefined,
-      email: email || undefined,
-      ageRange: getAnswerLabel(1, updatedAnswers),
-      advisorCommunication: getAnswerLabel(2, updatedAnswers),
-      netWorth: getAnswerLabel(3, updatedAnswers),
-      diversification: getAnswerLabel(4, updatedAnswers),
-      feeStructure: getAnswerLabel(5, updatedAnswers),
-      taxStrategy: getAnswerLabel(6, updatedAnswers),
-      financialAdvisor: getAnswerLabel(7, updatedAnswers),
-      primaryGoal: getAnswerLabel(8, updatedAnswers),
-      estatePlan: getAnswerLabel(9, updatedAnswers),
-      riskTolerance: getAnswerLabel(10, updatedAnswers),
-      investmentPortfolio: getAnswerLabel(11, updatedAnswers),
-      rebalancing: getAnswerLabel(12, updatedAnswers),
-      investmentPerformance: getAnswerLabel(13, updatedAnswers),
-    })
-      .then((result) => {
-        console.log("[v0] Supabase save result:", result)
-        if (result.success && result.data && !submissionId) {
+    // Ensure we have a submission ID before trying to save
+    if (!submissionId) {
+      console.log("[v0] No submission ID available, creating new assessment record...")
+      try {
+        const result = await updateAssessmentProgress({
+          currentQuestion: currentQuestion + 1,
+          answers: updatedAnswers,
+          questionsAnswered: Object.keys(updatedAnswers).map(key => parseInt(key)).sort((a, b) => a - b),
+          isCompleted: false
+        })
+        
+        if (result.success && result.data) {
           const newSubmissionId = result.data.id
           setSubmissionId(newSubmissionId)
           sessionStorage.setItem("submissionId", newSubmissionId)
-          console.log("[v0] Created new submission ID:", newSubmissionId)
+          console.log("[v0] Created new assessment record with ID:", newSubmissionId)
+        }
+      } catch (error) {
+        console.error("[v0] Error creating assessment record in saveProgress:", error)
+      }
+      return
+    }
+
+    // Track which questions have been answered in order
+    const questionsAnswered = Object.keys(updatedAnswers)
+      .map(key => parseInt(key))
+      .sort((a, b) => a - b) // Sort by question number
+
+    const databaseFields = mapAnswersToDatabaseFields(updatedAnswers)
+
+    updateAssessmentProgress({
+      submissionId: submissionId, // Always use existing submission ID
+      questionsAnswered: questionsAnswered,
+      ...databaseFields
+    })
+      .then((result) => {
+        console.log("[v0] Supabase save result:", result)
+        if (result.success) {
+          console.log("[v0] Successfully updated assessment progress")
         }
       })
       .catch((error) => {
         console.error("[v0] Error in saveProgress:", error)
+        console.error("[v0] Full error details:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        })
       })
   }
 
@@ -384,11 +546,19 @@ export default function AssessmentPage() {
       timestamp: new Date().toISOString()
     }
 
+    const finalDatabaseFields = mapAnswersToDatabaseFields(answers)
+    
     updateAssessmentProgress({
       submissionId: submissionId || undefined,
       score: totalScore,
       qualificationStatus: isQualified ? "qualified" : "not-qualified",
       email: email,
+      firstName: name.split(' ')[0] || undefined,
+      lastName: name.split(' ').slice(1).join(' ') || undefined,
+      phone: phone,
+      consentGiven: true,
+      isCompleted: true,
+      ...finalDatabaseFields
     })
 
     // Store data in sessionStorage for results pages
@@ -406,7 +576,7 @@ export default function AssessmentPage() {
     }
   }
 
-  const handleAnswer = (optionIndex: number) => {
+  const handleAnswer = async (optionIndex: number) => {
     const option = question.options[optionIndex]
 
     if (question.multiSelect) {
@@ -425,14 +595,14 @@ export default function AssessmentPage() {
       
       setAnswers(newAnswers)
       
-      // Save in background without blocking UI
-      saveProgress(newAnswers)
+      // Save immediately when answer is selected
+      await saveProgress(newAnswers)
     } else {
       const updatedAnswers = { ...answers, [question.id]: [optionIndex] }
       setAnswers(updatedAnswers)
 
-      // Save in background without blocking UI
-      saveProgress(updatedAnswers)
+      // Save immediately when answer is selected
+      await saveProgress(updatedAnswers)
 
       setTimeout(() => {
         // Check if this is the company type question and "Limited company" was selected
@@ -467,9 +637,9 @@ export default function AssessmentPage() {
     }
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     // Save in background without blocking UI
-    saveProgress(answers)
+    await saveProgress(answers)
 
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
@@ -556,22 +726,17 @@ export default function AssessmentPage() {
     if (result.success) {
       // OTP verified successfully - save name and phone to Supabase
       try {
+        const finalDatabaseFields = mapAnswersToDatabaseFields(answers)
+        
         await updateAssessmentProgress({
           submissionId: submissionId || undefined,
           email: email,
-          ageRange: getAnswerLabel(1, answers),
-          advisorCommunication: getAnswerLabel(2, answers),
-          netWorth: getAnswerLabel(3, answers),
-          diversification: getAnswerLabel(4, answers),
-          feeStructure: getAnswerLabel(5, answers),
-          taxStrategy: getAnswerLabel(6, answers),
-          financialAdvisor: getAnswerLabel(7, answers),
-          primaryGoal: getAnswerLabel(8, answers),
-          estatePlan: getAnswerLabel(9, answers),
-          riskTolerance: getAnswerLabel(10, answers),
-          investmentPortfolio: getAnswerLabel(11, answers),
-          rebalancing: getAnswerLabel(12, answers),
-          investmentPerformance: getAnswerLabel(13, answers),
+          firstName: name.split(' ')[0] || undefined,
+          lastName: name.split(' ').slice(1).join(' ') || undefined,
+          phone: phone,
+          consentGiven: true,
+          isCompleted: true,
+          ...finalDatabaseFields
         })
       } catch (error) {
         console.error("[v0] Error saving final data to Supabase:", error)
@@ -678,6 +843,18 @@ export default function AssessmentPage() {
       default:
         return ""
     }
+  }
+
+  // Show loading screen while initializing
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F1EC' }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-sm text-muted-foreground">Setting up your assessment...</p>
+        </div>
+      </div>
+    )
   }
 
   // Lead capture screen - shown after assessment completion

@@ -1,0 +1,19 @@
+# Environment Variables for TallyFinance
+# Copy this file to .env.local and fill in your actual values
+
+# Zeruh Email Validation API
+ZERUH_API_KEY=650aeec183dba9cf14fe5ab40d5e270733d5890b1364c526a210f5c8bb6363aa
+
+# Twilio SMS/OTP Configuration
+# Get these from: https://console.twilio.com
+TWILIO_ACCOUNT_SID=your_twilio_account_sid_here
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
+TWILIO_VERIFY_SERVICE_SID=your_twilio_verify_service_sid_here
+
+# Supabase Configuration
+# Get these from: https://supabase.com/dashboard/project/_/settings/api
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+
+# Companies House API
+NEXT_PUBLIC_COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
