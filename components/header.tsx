@@ -3,7 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { Menu } from "lucide-react"
+import { Menu, ArrowRight } from "lucide-react"
 import { useState } from "react"
 
 export function Header() {
@@ -19,19 +19,17 @@ export function Header() {
               alt="Tally" 
               width={120} 
               height={40} 
+              priority
               className="h-8 sm:h-10 w-auto"
             />
           </Link>
 
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/#why-tally" className="text-sm font-bold text-foreground/90 hover:text-foreground transition-colors">
-              Why Tally
-            </Link>
-            <Link href="/#faq" className="text-sm font-bold text-foreground/90 hover:text-foreground transition-colors">
-              FAQ
-            </Link>
+          <nav className="hidden md:flex items-center">
             <Link href="/assessment">
-              <Button className="bg-tally-purple text-white hover:bg-tally-purple/90 rounded-full font-bold">Apply now</Button>
+              <Button size="lg" className="bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-base px-8 py-4 rounded-xl font-bold transition-all duration-300">
+                Apply now
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </Link>
           </nav>
 
@@ -43,23 +41,10 @@ export function Header() {
         {mobileMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <nav className="flex flex-col gap-4">
-              <Link
-                href="/#why-tally"
-                className="text-sm font-bold text-foreground/90 hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Why Tally
-              </Link>
-              <Link
-                href="/#faq"
-                className="text-sm font-bold text-foreground/90 hover:text-foreground transition-colors"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                FAQ
-              </Link>
-              <Link href="/assessment" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-tally-purple text-white hover:bg-tally-purple/90 rounded-full font-bold">
+              <Link href="/assessment" onClick={() => setMobileMenuOpen(false)} className="w-full">
+                <Button size="lg" className="w-full bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-base px-8 py-4 rounded-xl font-bold transition-all duration-300">
                   Apply now
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
             </nav>

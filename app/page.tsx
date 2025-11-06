@@ -4,7 +4,7 @@ import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, Shield, Globe, TrendingUp, Users, Building2, Sparkles, Zap, Clock, CheckCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { ArrowRight, Shield, Globe, TrendingUp, Users, Building2, Sparkles, Zap, Clock, CheckCircle, ChevronDown, ChevronUp, FileText } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
@@ -18,7 +18,7 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    // Trigger shake animation for "Apply now" button
+    // Trigger shake animation for "Apply now" button - deferred to avoid blocking initial render
     const timer = setTimeout(() => {
       setShowButtonShake(true)
       setTimeout(() => setShowButtonShake(false), 1000) // Stop shaking after 1 second
@@ -37,7 +37,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="text-center lg:text-left">
               <div className="flex justify-center lg:justify-start mb-6">
-                <Image src="/trustpilot-logo.png" alt="Trustpilot" width={200} height={50} className="h-12 w-auto" />
+                <Image src="/trustpilot-logo.png" alt="Trustpilot" width={200} height={50} priority className="h-12 w-auto" />
               </div>
               <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-balance mb-6 text-foreground font-bold">
                 See if you qualify for a business loan
@@ -47,32 +47,23 @@ export default function HomePage() {
               </p>
               <div className="flex justify-center lg:justify-start">
                 <Link href="/assessment" className="w-full sm:w-auto">
-                  <Button size="lg" className={`group w-full sm:w-auto bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-2xl sm:text-xl px-24 sm:px-20 py-8 sm:py-6 rounded-xl font-bold shadow-2xl hover:shadow-tally-purple/50 transition-all duration-300 ${showButtonShake ? 'animate-shake' : ''}`}>
+                  <Button size="lg" className={`group w-full sm:w-auto bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-3xl sm:text-2xl px-28 sm:px-24 py-10 sm:py-8 rounded-xl font-bold shadow-2xl hover:shadow-tally-purple/50 transition-all duration-300 ${showButtonShake ? 'animate-shake' : ''}`}>
                     Apply now
-                    <ArrowRight className="ml-3 h-7 w-7 group-hover:animate-bounce" />
+                    <ArrowRight className="ml-3 h-8 w-8 group-hover:animate-bounce" />
                   </Button>
                 </Link>
               </div>
               
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-6 mt-8 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-tally-purple" />
-                  <span>Credit score not affected</span>
-                </div>
-                <div className="hidden sm:flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-tally-purple" />
-                  <span>Takes under 2 minutes</span>
-                </div>
-              </div>
             </div>
             
             <div className="hidden lg:block">
               <div className="relative">
                 <Image 
-                  src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory.jpg" 
+                  src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory (1) (1).jpg" 
                   alt="Business team collaboration" 
                   width={600} 
                   height={400} 
+                  priority
                   className="w-full h-auto rounded-lg shadow-lg"
                 />
               </div>
@@ -83,12 +74,37 @@ export default function HomePage() {
           <div className="lg:hidden mt-12">
             <div className="relative">
               <Image 
-                src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory.jpg" 
+                src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory (1) (1).jpg" 
                 alt="Business team collaboration" 
                 width={600} 
                 height={400} 
+                priority
                 className="w-full h-auto rounded-lg shadow-lg"
               />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Bar */}
+      <section className="py-6 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: 'oklch(0.35 0.05 280)' }}>
+        <div className="container mx-auto max-w-6xl">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            <div className="flex items-center gap-3 text-white">
+              <CheckCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-medium">Credit Score is Not Affected</span>
+            </div>
+            <div className="flex items-center gap-3 text-white">
+              <Clock className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-medium">Takes under two minutes</span>
+            </div>
+            <div className="flex items-center gap-3 text-white">
+              <FileText className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-medium">Short and Long Term Finance</span>
+            </div>
+            <div className="flex items-center gap-3 text-white">
+              <Building2 className="h-5 w-5 flex-shrink-0" />
+              <span className="text-sm sm:text-base font-medium">Government Backed Options</span>
             </div>
           </div>
         </div>
