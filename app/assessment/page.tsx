@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import type React from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ import { CheckSquare, Mail, Lock, CheckCircle2, XCircle, Loader2, User, Phone, P
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { updateAssessmentProgress } from "@/app/actions/update-assessment-progress"
-import { verifyEmailWithKitt } from "@/app/actions/verify-email"
+import { verifyEmailWithZeruh } from "@/app/actions/verify-email"
 import { searchCompanies, getCompanyDetails, saveCompanyDetails, getCompanyOfficers } from "@/app/actions/companies-house-lookup"
 import { sendOTP, verifyOTP } from "@/app/actions/send-otp"
 
@@ -31,11 +32,15 @@ export default function AssessmentPage() {
   const [emailVerificationStatus, setEmailVerificationStatus] = useState<"idle" | "verifying" | "valid" | "invalid">("idle")
   
   // OTP verification states
-  const [otpCode, setOtpCode] = useState("")
+  const OTP_LENGTH = 6
+  const [otpDigits, setOtpDigits] = useState<string[]>(Array(OTP_LENGTH).fill(""))
+  const otpInputRefs = useRef<Array<HTMLInputElement | null>>([])
+  const resendIntervalRef = useRef<number | null>(null)
   const [showOtpInput, setShowOtpInput] = useState(false)
   const [otpError, setOtpError] = useState("")
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [resendCountdown, setResendCountdown] = useState(0)
   const [showLeadCapture, setShowLeadCapture] = useState(false)
   const [currentLeadStep, setCurrentLeadStep] = useState(0)
   const [loanAmount, setLoanAmount] = useState<number | null>(null)
@@ -57,7 +62,44 @@ export default function AssessmentPage() {
   const [isLoadingOfficers, setIsLoadingOfficers] = useState(false)
   const [showDirectorsSelection, setShowDirectorsSelection] = useState(false)
   const [showYesShake, setShowYesShake] = useState(false)
-  const [isInitializing, setIsInitializing] = useState(true)
+
+  const otpCode = otpDigits.join("")
+
+  const resetOtpDigits = () => {
+    setOtpDigits(Array(OTP_LENGTH).fill(""))
+  }
+
+  const clearResendInterval = () => {
+    if (resendIntervalRef.current !== null) {
+      window.clearInterval(resendIntervalRef.current)
+      resendIntervalRef.current = null
+    }
+  }
+
+  const stopResendCountdown = () => {
+    clearResendInterval()
+    setResendCountdown(0)
+  }
+
+  const startResendCountdown = () => {
+    stopResendCountdown()
+    setResendCountdown(60)
+    resendIntervalRef.current = window.setInterval(() => {
+      setResendCountdown((prev) => {
+        if (prev <= 1) {
+          stopResendCountdown()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  useEffect(() => {
+    return () => {
+      clearResendInterval()
+    }
+  }, [])
 
   // Initialize assessment record when component mounts
   useEffect(() => {
@@ -65,7 +107,6 @@ export default function AssessmentPage() {
       const savedSubmissionId = sessionStorage.getItem("submissionId")
       if (savedSubmissionId) {
         setSubmissionId(savedSubmissionId)
-        setIsInitializing(false)
         console.log("[v0] Using existing submission ID:", savedSubmissionId)
       } else {
         // Create new assessment record immediately
@@ -81,15 +122,12 @@ export default function AssessmentPage() {
             const newSubmissionId = result.data.id
             setSubmissionId(newSubmissionId)
             sessionStorage.setItem("submissionId", newSubmissionId)
-            setIsInitializing(false)
             console.log("[v0] Created new assessment record with ID:", newSubmissionId)
           } else {
             console.error("[v0] Failed to create assessment record:", result.error)
-            setIsInitializing(false)
           }
         } catch (error) {
           console.error("[v0] Error creating assessment record:", error)
-          setIsInitializing(false)
         }
       }
     }
@@ -163,6 +201,16 @@ export default function AssessmentPage() {
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [currentQuestion, showDirectorsSelection])
+
+  useEffect(() => {
+    if (currentLeadStep === 3 && showOtpInput) {
+      const timeout = setTimeout(() => {
+        otpInputRefs.current[0]?.focus()
+      }, 150)
+
+      return () => clearTimeout(timeout)
+    }
+  }, [currentLeadStep, showOtpInput])
 
   const question = questions[currentQuestion]
   
@@ -424,7 +472,6 @@ export default function AssessmentPage() {
   // Helper function to map answers to database fields
   const mapAnswersToDatabaseFields = (updatedAnswers: Record<number, number[]>) => {
     const question1Answer = updatedAnswers[1]?.[0] // Business owner question
-    const question2Answer = updatedAnswers[2]?.[0] // Loan amount question  
     const question3Answer = updatedAnswers[3]?.[0] // Trading time question
     const question4Answer = updatedAnswers[4]?.[0] // Annual turnover question
     const question5Answer = updatedAnswers[5]?.[0] // Company type question
@@ -433,17 +480,16 @@ export default function AssessmentPage() {
     const question8Answer = updatedAnswers[8]?.[0] // Homeowner question
 
     return {
-      question1BusinessOwner: question1Answer === 0, // "Yes" option
-      question2LoanAmount: loanAmount,
+      question1BusinessOwner: question1Answer !== undefined ? question1Answer === 0 : undefined,
+      question2LoanAmount: loanAmount ?? undefined,
       question3TradingTime: question3Answer !== undefined ? questions[2].options[question3Answer]?.label : undefined,
-      question4AnnualTurnover: turnover,
+      question4AnnualTurnover: turnover ?? undefined,
       question5CompanyType: question5Answer !== undefined ? questions[4].options[question5Answer]?.label : undefined,
       question6FinancePurpose: question6Answer !== undefined ? questions[5].options[question6Answer]?.label : undefined,
       question7CreditProfile: question7Answer !== undefined ? questions[6].options[question7Answer]?.label : undefined,
-      question8Homeowner: question8Answer === 0, // "Yes" option
+      question8Homeowner: question8Answer !== undefined ? question8Answer === 0 : undefined,
       currentQuestion: currentQuestion + 1,
       answers: updatedAnswers,
-      isCompleted: false
     }
   }
 
@@ -487,6 +533,7 @@ export default function AssessmentPage() {
     updateAssessmentProgress({
       submissionId: submissionId, // Always use existing submission ID
       questionsAnswered: questionsAnswered,
+      isCompleted: false,
       ...databaseFields
     })
       .then((result) => {
@@ -532,6 +579,28 @@ export default function AssessmentPage() {
     
     const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
 
+    const getAnswerLabel = (questionId: number) => {
+      const answerIndices = answers[questionId]
+      if (!answerIndices || answerIndices.length === 0) {
+        return undefined
+      }
+
+      const questionData = questions.find((question) => question.id === questionId)
+      if (!questionData) {
+        return undefined
+      }
+
+      return questionData.options[answerIndices[0]]?.label
+    }
+
+    const tradingDurationLabel = getAnswerLabel(3)
+    const companyTypeLabel = getAnswerLabel(5)
+    const financePurposeLabel = getAnswerLabel(6)
+    const creditProfileLabel = getAnswerLabel(7)
+    const homeownerLabel = getAnswerLabel(8)
+
+    const formattedTurnover = turnover !== null ? `£${turnover.toLocaleString()}` : undefined
+
     // Create lead data object for results pages
     const leadData = {
       email: email,
@@ -539,6 +608,12 @@ export default function AssessmentPage() {
       phone: phone || sessionStorage.getItem("userPhone") || "",
       loanAmount: loanAmount,
       turnover: turnover,
+      tradingDuration: tradingDurationLabel,
+      annualTurnover: formattedTurnover,
+      companyType: companyTypeLabel,
+      financePurpose: financePurposeLabel,
+      creditProfile: creditProfileLabel,
+      isHomeowner: homeownerLabel,
       score: totalScore,
       isQualified: isQualified,
       answers: answers,
@@ -704,7 +779,12 @@ export default function AssessmentPage() {
     const result = await sendOTP(phone)
 
     if (result.success) {
+      resetOtpDigits()
       setShowOtpInput(true)
+      startResendCountdown()
+      setTimeout(() => {
+        otpInputRefs.current[0]?.focus()
+      }, 150)
     } else {
       setOtpError(result.error || "Failed to send verification code")
     }
@@ -713,8 +793,8 @@ export default function AssessmentPage() {
   }
 
   const handleVerifyOTP = async () => {
-    if (!otpCode || otpCode.trim().length === 0) {
-      setOtpError("Please enter the verification code")
+    if (otpCode.length !== OTP_LENGTH) {
+      setOtpError(`Please enter the ${OTP_LENGTH}-digit verification code`)
       return
     }
 
@@ -748,11 +828,89 @@ export default function AssessmentPage() {
       
       // Proceed to results page
       calculateScoreAndRoute()
+      stopResendCountdown()
     } else {
       setOtpError(result.error || "Invalid verification code. Please try again.")
     }
 
     setIsVerifyingOtp(false)
+    stopResendCountdown()
+  }
+
+  const handleOtpDigitChange = (index: number, value: string) => {
+    const cleaned = value.replace(/\D/g, "")
+    const newDigits = [...otpDigits]
+
+    if (!cleaned) {
+      newDigits[index] = ""
+      setOtpDigits(newDigits)
+      setOtpError("")
+      return
+    }
+
+    newDigits[index] = cleaned.slice(-1)
+    setOtpDigits(newDigits)
+    setOtpError("")
+
+    if (index < OTP_LENGTH - 1) {
+      otpInputRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Backspace" && !otpDigits[index] && index > 0) {
+      event.preventDefault()
+      const previousIndex = index - 1
+      const newDigits = [...otpDigits]
+      newDigits[previousIndex] = ""
+      setOtpDigits(newDigits)
+      setOtpError("")
+      otpInputRefs.current[previousIndex]?.focus()
+      return
+    }
+
+    if (event.key === "ArrowLeft" && index > 0) {
+      event.preventDefault()
+      otpInputRefs.current[index - 1]?.focus()
+    }
+
+    if (event.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+      event.preventDefault()
+      otpInputRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpPaste = (index: number, event: React.ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    const pasted = event.clipboardData.getData("text").replace(/\D/g, "")
+    if (!pasted) {
+      return
+    }
+
+    const newDigits = [...otpDigits]
+    let nextIndex = index
+
+    for (const char of pasted) {
+      if (nextIndex >= OTP_LENGTH) {
+        break
+      }
+
+      newDigits[nextIndex] = char
+      nextIndex += 1
+    }
+
+    for (let i = nextIndex; i < OTP_LENGTH; i++) {
+      newDigits[i] = ""
+    }
+
+    setOtpDigits(newDigits)
+    setOtpError("")
+
+    if (nextIndex <= OTP_LENGTH - 1) {
+      otpInputRefs.current[nextIndex]?.focus()
+    } else {
+      otpInputRefs.current[OTP_LENGTH - 1]?.blur()
+    }
   }
 
   const handleLeadStepNext = async () => {
@@ -766,16 +924,25 @@ export default function AssessmentPage() {
       setEmailVerificationStatus("verifying")
       setEmailError("")
 
-      const result = await verifyEmailWithKitt(email)
+      try {
+        const result = await verifyEmailWithZeruh(email)
 
-      if (result.success) {
-        setEmailVerificationStatus("valid")
-        // Save email to Supabase
-        await saveEmailToSupabase(email)
-        setCurrentLeadStep(3)
-      } else {
+        if (result?.success) {
+          setEmailVerificationStatus("valid")
+          // Save email to Supabase
+          await saveEmailToSupabase(email)
+          setCurrentLeadStep(3)
+          resetOtpDigits()
+          setShowOtpInput(false)
+          stopResendCountdown()
+        } else {
+          setEmailVerificationStatus("invalid")
+          setEmailError(result?.error || "This email address appears to be invalid. Please check and try again.")
+        }
+      } catch (err) {
+        console.error("[v0] Email verification failed", err)
         setEmailVerificationStatus("invalid")
-        setEmailError("This email address appears to be invalid. Please check and try again.")
+        setEmailError("We couldn't verify your email right now. Please try again.")
       }
     } else if (currentLeadStep === 3) {
       // Phone step - send OTP if not sent yet
@@ -802,7 +969,7 @@ export default function AssessmentPage() {
         if (!showOtpInput) {
           return phone.trim().length > 0 && !isSendingOtp
         } else {
-          return otpCode.trim().length === 6 && !isVerifyingOtp
+          return otpCode.length === OTP_LENGTH && !isVerifyingOtp
         }
       default:
         return false
@@ -843,18 +1010,6 @@ export default function AssessmentPage() {
       default:
         return ""
     }
-  }
-
-  // Show loading screen while initializing
-  if (isInitializing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F8F1EC' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-sm text-muted-foreground">Setting up your assessment...</p>
-        </div>
-      </div>
-    )
   }
 
   // Lead capture screen - shown after assessment completion
@@ -1102,46 +1257,75 @@ export default function AssessmentPage() {
                     )}
 
                     {currentLeadStep === 3 && showOtpInput && (
-                      <div>
-                        <Label htmlFor="otp" className="mb-1.5 block text-sm">
-                          Enter verification code <span className="text-destructive">*</span>
-                        </Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="otp"
-                            type="text"
-                            required
-                            value={otpCode}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '').slice(0, 6)
-                              setOtpCode(value)
-                              setOtpError("")
-                            }}
-                            className="pl-10 h-12 rounded-md bg-white border-2 text-center text-2xl tracking-widest"
-                            placeholder="000000"
-                            autoFocus
-                            disabled={isVerifyingOtp}
-                            maxLength={6}
-                          />
+                      <div className="space-y-5">
+                        <div className="text-center space-y-2">
+                          <h4 className="text-lg font-semibold text-foreground">Mobile Phone Verification</h4>
+                          <p className="text-sm text-muted-foreground">
+                            Enter the {OTP_LENGTH}-digit verification code we sent to {phone}.
+                          </p>
                         </div>
-                        <p className="text-sm text-foreground mt-2 font-medium">
-                          Check your mobile - we sent a 6-digit code to {phone}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setShowOtpInput(false)
-                            setOtpCode("")
-                            setOtpError("")
-                          }}
-                          className="w-full mt-3"
-                        >
-                          <ChevronLeft className="h-4 w-4 mr-2" />
-                          Change phone number
-                        </Button>
-                        {otpError && <p className="text-xs text-destructive mt-1.5">{otpError}</p>}
+
+                        <div className="flex justify-center">
+                          <div className="grid grid-cols-6 gap-3">
+                            {otpDigits.map((digit, index) => (
+                              <input
+                                key={index}
+                                ref={(el) => {
+                                  otpInputRefs.current[index] = el
+                                }}
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                autoComplete="one-time-code"
+                                maxLength={1}
+                                value={digit}
+                                onChange={(event) => handleOtpDigitChange(index, event.target.value)}
+                                onKeyDown={(event) => handleOtpKeyDown(index, event)}
+                                onPaste={(event) => handleOtpPaste(index, event)}
+                                onFocus={(event) => event.target.select()}
+                                disabled={isVerifyingOtp}
+                                className="h-14 w-12 rounded-lg border-2 border-input bg-white text-center text-2xl font-semibold tracking-wide transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                                aria-label={`Digit ${index + 1}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        {otpError && <p className="text-xs text-destructive text-center">{otpError}</p>}
+
+                        <div className="space-y-3">
+                          <div className="text-center text-sm text-muted-foreground">
+                            Didn't receive a code?{" "}
+                            <button
+                              type="button"
+                              onClick={handleSendOTP}
+                            disabled={isSendingOtp || isVerifyingOtp || resendCountdown > 0}
+                            className="ml-1 font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                            {isSendingOtp
+                              ? "Resending..."
+                              : resendCountdown > 0
+                                ? `Resend in ${resendCountdown}s`
+                                : "Resend"}
+                            </button>
+                          </div>
+
+                        <div className="text-center text-sm text-muted-foreground">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowOtpInput(false)
+                              resetOtpDigits()
+                              setOtpError("")
+                              stopResendCountdown()
+                            }}
+                            className="inline-flex items-center gap-1 ml-1 font-medium text-primary hover:underline"
+                          >
+                            <ChevronLeft className="h-3 w-3" />
+                            Use a different phone number
+                          </button>
+                      </div>
+                        </div>
                       </div>
                     )}
 

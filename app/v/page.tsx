@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import { verifyEmailWithKitt } from "@/app/actions/verify-email"
+import { verifyEmailWithZeruh } from "@/app/actions/verify-email"
 import { updateAssessmentRecord } from "@/app/actions/update-assessment"
 
 interface ScoreTier {
@@ -248,7 +248,7 @@ export default function AssessmentResultsPage() {
     setEmailVerificationStatus("verifying")
     setEmailError("")
 
-    const result = await verifyEmailWithKitt(email)
+    const result = await verifyEmailWithZeruh(email)
 
     if (result.success) {
       setEmailVerificationStatus("valid")
