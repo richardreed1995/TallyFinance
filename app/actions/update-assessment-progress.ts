@@ -1,6 +1,8 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { sendLeadNotificationEmail, type AssessmentSubmission } from "./send-lead-notification"
+import { triggerQualifiedLeadWebhook } from "./trigger-qualified-lead-webhook"
 
 export interface ProgressUpdate {
   submissionId?: string
@@ -71,14 +73,14 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
     if (data.consentGiven !== undefined) updateData.consent_given = data.consentGiven
     
     // Assessment answers (in exact question order)
-    if (data.question1BusinessOwner !== undefined) updateData.question_1_business_owner = data.question1BusinessOwner
-    if (data.question2LoanAmount !== undefined) updateData.question_2_loan_amount = data.question2LoanAmount
-    if (data.question3TradingTime !== undefined) updateData.question_3_trading_time = data.question3TradingTime
-    if (data.question4AnnualTurnover !== undefined) updateData.question_4_annual_turnover = data.question4AnnualTurnover
-    if (data.question5CompanyType !== undefined) updateData.question_5_company_type = data.question5CompanyType
-    if (data.question6FinancePurpose !== undefined) updateData.question_6_finance_purpose = data.question6FinancePurpose
-    if (data.question7CreditProfile !== undefined) updateData.question_7_credit_profile = data.question7CreditProfile
-    if (data.question8Homeowner !== undefined) updateData.question_8_homeowner = data.question8Homeowner
+    if (data.question1BusinessOwner !== undefined) updateData.business_owner = data.question1BusinessOwner
+    if (data.question2LoanAmount !== undefined) updateData.loan_amount = data.question2LoanAmount
+    if (data.question3TradingTime !== undefined) updateData.trading_time = data.question3TradingTime
+    if (data.question4AnnualTurnover !== undefined) updateData.annual_turnover = data.question4AnnualTurnover
+    if (data.question5CompanyType !== undefined) updateData.company_type = data.question5CompanyType
+    if (data.question6FinancePurpose !== undefined) updateData.finance_purpose = data.question6FinancePurpose
+    if (data.question7CreditProfile !== undefined) updateData.credit_profile = data.question7CreditProfile
+    if (data.question8Homeowner !== undefined) updateData.homeowner = data.question8Homeowner
     
     // Progress tracking
     if (data.currentQuestion !== undefined) updateData.current_question = data.currentQuestion
@@ -117,44 +119,242 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
     if (data.submissionId) {
       // Update existing submission
       console.log("[v0] Updating existing submission with data:", updateData)
-      const { data: submission, error } = await supabase
-        .from("assessment_submissions")
-        .update(updateData)
-        .eq("id", data.submissionId)
-        .select()
-        .single()
+      const updateResult = await performAssessmentMutation({
+        supabase,
+        mode: "update",
+        payload: updateData,
+        submissionId: data.submissionId,
+      })
 
-      if (error) {
-        console.error("[v0] Error updating assessment:", error)
-        console.error("[v0] Update data that failed:", updateData)
-        throw error
+      if (!updateResult.success || !updateResult.data) {
+        return updateResult
       }
 
-      console.log("[v0] Successfully updated assessment:", submission)
-      return { success: true, data: submission }
+      console.log("[v0] Successfully updated assessment:", updateResult.data)
+      
+      await handleQualifiedLeadSideEffects(updateResult.data, data.qualificationStatus)
+      
+      return { success: true, data: updateResult.data }
     } else {
       // Create new submission
       console.log("[v0] Creating new submission with data:", updateData)
-      const { data: submission, error } = await supabase
-        .from("assessment_submissions")
-        .insert(updateData)
-        .select()
-        .single()
+      const insertResult = await performAssessmentMutation({
+        supabase,
+        mode: "insert",
+        payload: updateData,
+      })
 
-      if (error) {
-        console.error("[v0] Error creating assessment:", error)
-        console.error("[v0] Insert data that failed:", updateData)
-        throw error
+      if (!insertResult.success || !insertResult.data) {
+        return insertResult
       }
 
-      console.log("[v0] Successfully created assessment:", submission)
-      return { success: true, data: submission }
+      console.log("[v0] Successfully created assessment:", insertResult.data)
+      
+      await handleQualifiedLeadSideEffects(insertResult.data, data.qualificationStatus)
+      
+      return { success: true, data: insertResult.data }
     }
   } catch (error) {
     console.error("[v0] Failed to update assessment progress:", error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to update assessment",
+      error:
+        error && typeof error === "object" && "message" in error && typeof error.message === "string"
+          ? error.message
+          : "Failed to update assessment",
+      details:
+        error && typeof error === "object" && "details" in error ? (error as any).details : undefined,
+      hint: error && typeof error === "object" && "hint" in error ? (error as any).hint : undefined,
+      code: error && typeof error === "object" && "code" in error ? (error as any).code : undefined,
     }
+  }
+}
+
+type MutationMode = "insert" | "update"
+
+interface MutationOptions {
+  supabase: Awaited<ReturnType<typeof createClient>>
+  mode: MutationMode
+  payload: Record<string, any>
+  submissionId?: string
+}
+
+async function performAssessmentMutation(options: MutationOptions) {
+  const { supabase, mode, payload, submissionId } = options
+
+  const mutation = await executeMutation({
+    supabase,
+    mode,
+    payload,
+    submissionId,
+  })
+
+  if (!mutation.error) {
+    return {
+      success: true as const,
+      data: normalizeSubmissionRecord(mutation.data),
+    }
+  }
+
+  console.error("[v0] Assessment mutation failed:", mutation.error)
+  console.error("[v0] Payload that failed:", payload)
+
+  if (shouldFallbackToQuestionOrderSchema(mutation.error)) {
+    console.warn(
+      "[v0] Detected question-order assessment schema. Retrying mutation with question_# column names."
+    )
+
+    const questionOrderPayload = mapToQuestionOrderColumns(payload)
+    const questionOrderMutation = await executeMutation({
+      supabase,
+      mode,
+      payload: questionOrderPayload,
+      submissionId,
+    })
+
+    if (!questionOrderMutation.error) {
+      console.log("[v0] Question-order schema mutation succeeded")
+      return {
+        success: true as const,
+        data: normalizeSubmissionRecord(questionOrderMutation.data),
+      }
+    }
+
+    console.error("[v0] Question-order schema mutation also failed:", questionOrderMutation.error)
+    console.error("[v0] Question-order payload that failed:", questionOrderPayload)
+    return formatMutationFailure(questionOrderMutation.error)
+  }
+
+  return formatMutationFailure(mutation.error)
+}
+
+interface ExecuteMutationOptions {
+  supabase: Awaited<ReturnType<typeof createClient>>
+  mode: MutationMode
+  payload: Record<string, any>
+  submissionId?: string
+}
+
+async function executeMutation(options: ExecuteMutationOptions) {
+  const { supabase, mode, payload, submissionId } = options
+
+  if (mode === "update" && submissionId) {
+    return supabase
+      .from("assessment_submissions")
+      .update(payload)
+      .eq("id", submissionId)
+      .select()
+      .single()
+  }
+
+  return supabase.from("assessment_submissions").insert(payload).select().single()
+}
+
+function shouldFallbackToQuestionOrderSchema(error: any): boolean {
+  if (!error) {
+    return false
+  }
+
+  const message = typeof error.message === "string" ? error.message.toLowerCase() : ""
+
+  return (
+    error.code === "PGRST204" ||
+    (error.code === "42703" && message.includes("column")) ||
+    message.includes("business_owner")
+  )
+}
+
+function mapToQuestionOrderColumns(payload: Record<string, any>) {
+  const questionOrderPayload = { ...payload }
+
+  const mappings: Record<string, string> = {
+    business_owner: "question_1_business_owner",
+    loan_amount: "question_2_loan_amount",
+    trading_time: "question_3_trading_time",
+    annual_turnover: "question_4_annual_turnover",
+    company_type: "question_5_company_type",
+    finance_purpose: "question_6_finance_purpose",
+    credit_profile: "question_7_credit_profile",
+    homeowner: "question_8_homeowner",
+  }
+
+  for (const [legacyKey, newKey] of Object.entries(mappings)) {
+    if (questionOrderPayload[legacyKey] !== undefined) {
+      questionOrderPayload[newKey] = questionOrderPayload[legacyKey]
+      delete questionOrderPayload[legacyKey]
+    }
+  }
+
+  return questionOrderPayload
+}
+
+function formatMutationFailure(error: any) {
+  return {
+    success: false as const,
+    error: error?.message ?? "Failed to persist assessment",
+    details: error?.details,
+    hint: error?.hint,
+    code: error?.code,
+  }
+}
+
+function normalizeSubmissionRecord<T extends Record<string, any> | null>(
+  record: T
+): T {
+  if (!record || typeof record !== "object") {
+    return record
+  }
+
+  const normalized = { ...record }
+
+  const mappings: Record<string, string> = {
+    question_1_business_owner: "business_owner",
+    question_2_loan_amount: "loan_amount",
+    question_3_trading_time: "trading_time",
+    question_4_annual_turnover: "annual_turnover",
+    question_5_company_type: "company_type",
+    question_6_finance_purpose: "finance_purpose",
+    question_7_credit_profile: "credit_profile",
+    question_8_homeowner: "homeowner",
+  }
+
+  for (const [newKey, legacyKey] of Object.entries(mappings)) {
+    if (normalized[newKey] === undefined && normalized[legacyKey] !== undefined) {
+      normalized[newKey] = normalized[legacyKey]
+    }
+  }
+
+  return normalized as T
+}
+
+
+async function handleQualifiedLeadSideEffects(
+  submission: AssessmentSubmission,
+  qualificationStatus?: string
+) {
+  const effectiveStatus =
+    qualificationStatus ??
+    submission.qualification_status ??
+    (submission as any)?.qualificationStatus
+
+  if (effectiveStatus !== "qualified") {
+    console.log("[v0] Lead not qualified - skipping side effects")
+    return
+  }
+
+  console.log("[v0] Lead qualified - triggering side effects")
+
+  const emailResult = await sendLeadNotificationEmail(submission)
+  if (!emailResult.success && !emailResult.skipped) {
+    console.error("[v0] Failed to send lead notification email:", emailResult.error)
+  } else if (emailResult.success && !emailResult.skipped) {
+    console.log("[v0] Lead notification email sent successfully")
+  }
+
+  const webhookResult = await triggerQualifiedLeadWebhook(submission)
+  if (!webhookResult.success && !webhookResult.skipped) {
+    console.error("[v0] Failed to trigger lead webhook:", webhookResult.error)
+  } else if (webhookResult.success && !webhookResult.skipped) {
+    console.log("[v0] Lead webhook triggered successfully")
   }
 }

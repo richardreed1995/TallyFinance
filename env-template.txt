@@ -17,3 +17,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 # Companies House API
 NEXT_PUBLIC_COMPANIES_HOUSE_API_KEY=your_companies_house_api_key_here
+
+# Resend Email Notification Configuration
+# Get your API key from: https://resend.com/api-keys
+RESEND_API_KEY=your_resend_api_key_here
+RESEND_LEAD_NOTIFICATION_EMAIL=your_notification_email@example.com
+RESEND_LEAD_NOTIFICATION_SENDER="YourCompany <noreply@notification.yourdomain.com>"
+
+# Make.com Webhook Configuration
+MAKE_WEBHOOK_URL=https://hook.make.com/your_webhook_id_here

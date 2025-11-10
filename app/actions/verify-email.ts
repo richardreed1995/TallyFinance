@@ -1,6 +1,6 @@
 "use server"
 
-export async function verifyEmailWithKitt(email: string) {
+export async function verifyEmailWithZeruh(email: string) {
   try {
     // Zeruh API uses GET request with query parameters
     const apiKey = process.env.ZERUH_API_KEY
