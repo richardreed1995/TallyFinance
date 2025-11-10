@@ -7,47 +7,36 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowRight, Shield, Globe, TrendingUp, Users, Building2, Sparkles, Zap, Clock, CheckCircle, ChevronDown, ChevronUp, FileText } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 export default function HomePage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
-  const [showButtonShake, setShowButtonShake] = useState(false)
 
   const toggleFAQ = (index: number) => {
     setOpenFAQ(openFAQ === index ? null : index)
   }
-
-  useEffect(() => {
-    // Trigger shake animation for "Apply now" button - deferred to avoid blocking initial render
-    const timer = setTimeout(() => {
-      setShowButtonShake(true)
-      setTimeout(() => setShowButtonShake(false), 1000) // Stop shaking after 1 second
-    }, 500) // Start shaking after 500ms delay
-    
-    return () => clearTimeout(timer)
-  }, [])
 
   return (
     <div className="min-h-screen">
       <Header />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F8F1EC' }}>
+      <section className="pt-16 pb-12 sm:pt-24 sm:pb-16 lg:pt-32 lg:pb-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#F8F1EC' }}>
         <div className="container mx-auto max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 items-center">
             <div className="text-center lg:text-left">
-              <div className="flex justify-center lg:justify-start mb-6">
-                <Image src="/trustpilot-logo.png" alt="Trustpilot" width={200} height={50} priority className="h-12 w-auto" />
+              <div className="flex justify-center lg:justify-start mb-3 sm:mb-5">
+                <Image src="/trustpilot-logo.png" alt="Trustpilot" width={140} height={40} priority className="h-8 sm:h-10 w-auto" />
               </div>
-              <h1 className="font-serif text-5xl sm:text-6xl lg:text-7xl text-balance mb-6 text-foreground font-bold">
+              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl text-balance mb-3 sm:mb-5 text-foreground font-bold">
                 See if you qualify for a business loan
               </h1>
-              <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed mb-8">
+              <p className="text-base sm:text-xl text-muted-foreground max-w-3xl mx-auto lg:mx-0 leading-relaxed mb-4 sm:mb-6">
                 Get up to £2 million to grow your business and turn your plans into reality. Check your eligibility in 1 minute and access same-day funding.
               </p>
-              <div className="flex justify-center lg:justify-start">
-                <Link href="/assessment" className="w-full sm:w-auto">
-                  <Button size="lg" className={`group w-full sm:w-auto bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-3xl sm:text-2xl px-28 sm:px-24 py-10 sm:py-8 rounded-xl font-bold shadow-2xl hover:shadow-tally-purple/50 transition-all duration-300 ${showButtonShake ? 'animate-shake' : ''}`}>
+              <div className="hidden lg:flex justify-center lg:justify-start">
+                <Link href="/assessment">
+                  <Button size="lg" className="group bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-xl px-12 py-4 rounded-xl font-bold shadow-2xl hover:shadow-tally-purple/50 transition-all duration-300">
                     Apply now
                     <ArrowRight className="ml-3 h-8 w-8 group-hover:animate-bounce" />
                   </Button>
@@ -71,7 +60,7 @@ export default function HomePage() {
           </div>
           
           {/* Mobile Image */}
-          <div className="lg:hidden mt-12">
+          <div className="lg:hidden mt-6 space-y-4">
             <div className="relative">
               <Image 
                 src="/mid-adult-businessman-giving-presentation-group-industrial-workers-factory (1) (1).jpg" 
@@ -81,6 +70,14 @@ export default function HomePage() {
                 priority
                 className="w-full h-auto rounded-lg shadow-lg"
               />
+            </div>
+            <div>
+              <Link href="/assessment" className="block w-full">
+                <Button size="lg" className="w-full bg-tally-purple text-white hover:bg-tally-purple/90 hover:scale-105 active:scale-95 text-base px-6 py-3 rounded-xl font-semibold shadow-xl hover:shadow-tally-purple/40 transition-all duration-300">
+                  Apply now
+                  <ArrowRight className="ml-3 h-6 w-6" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -92,19 +89,19 @@ export default function HomePage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             <div className="flex items-center gap-3 text-white">
               <CheckCircle className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm sm:text-base font-medium">Credit Score is Not Affected</span>
+              <span className="text-sm sm:text-base font-medium">Credit score is not affected</span>
             </div>
             <div className="flex items-center gap-3 text-white">
               <Clock className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm sm:text-base font-medium">Takes under two minutes</span>
+              <span className="text-sm sm:text-base font-medium">Takes under 60 seconds</span>
             </div>
             <div className="flex items-center gap-3 text-white">
               <FileText className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm sm:text-base font-medium">Short and Long Term Finance</span>
+              <span className="text-sm sm:text-base font-medium">Short and long term finance</span>
             </div>
             <div className="flex items-center gap-3 text-white">
               <Building2 className="h-5 w-5 flex-shrink-0" />
-              <span className="text-sm sm:text-base font-medium">Government Backed Options</span>
+              <span className="text-sm sm:text-base font-medium">Government backed options</span>
             </div>
           </div>
         </div>
@@ -293,43 +290,43 @@ export default function HomePage() {
           <div className="space-y-4">
             {[
               {
-                question: "1. How quickly can I get my money?",
+                question: "How quickly can I get my money?",
                 answer: "Once approved and with your documents ready, you can receive your funds in as little as 4 hours, with same-day funding available."
               },
               {
-                question: "2. Will checking my eligibility affect my credit score?",
+                question: "Will checking my eligibility affect my credit score?",
                 answer: "No, our initial eligibility check is a soft search and won't impact your credit score. Only when you proceed with a specific lender's full application will a hard credit check be performed."
               },
               {
-                question: "3. How much can I borrow?",
+                question: "How much can I borrow?",
                 answer: "You can access business loans from £5,000 up to £2 million, depending on your business needs and eligibility."
               },
               {
-                question: "4. What do I need to apply?",
+                question: "What do I need to apply?",
                 answer: "Just basic information about your business. The application is quick and easy, taking only about a minute to complete."
               },
               {
-                question: "5. What are the eligibility requirements?",
+                question: "What are the eligibility requirements?",
                 answer: "Generally, you need to be a UK-registered Ltd or LLP trading for 12+ months, with regular turnover. Each lender has specific criteria, but we'll match you with those most likely to approve your application."
               },
               {
-                question: "6. What is Tally exactly—are you a lender?",
+                question: "What is Tally exactly—are you a lender?",
                 answer: "Tally is a loan matching service. We connect you with the best FCA-regulated brokers who can offer you the most suitable loan for your business."
               },
               {
-                question: "7. Are there any fees to use Tally?",
+                question: "Are there any fees to use Tally?",
                 answer: "Our service is completely free to you. We're paid by lenders if they successfully provide you with funding. If a lender charges arrangement or broker fees, they must disclose this upfront before you proceed."
               },
               {
-                question: "8. Do I need to provide security or collateral?",
+                question: "Do I need to provide security or collateral?",
                 answer: "It depends on the loan type and amount. We offer both secured loans (backed by property or assets) and unsecured loans (no collateral required). We'll help you understand which option suits your situation best."
               },
               {
-                question: "9. What documents will I need?",
+                question: "What documents will I need?",
                 answer: "Typically: 3-6 months' business bank statements, recent accounts (filed or management accounts), Companies House details, director ID and proof of address, and an explanation of funding purpose. Requirements vary by lender."
               },
               {
-                question: "10. How do I know if I'm getting a good rate?",
+                question: "How do I know if I'm getting a good rate?",
                 answer: "We connect you with multiple lenders, so you can compare offers. Rates depend on your business profile, loan amount, term, and security provided. We'll help you understand the offers and choose the best fit for your business."
               }
             ].map((faq, index) => (

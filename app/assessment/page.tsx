@@ -61,7 +61,6 @@ export default function AssessmentPage() {
   const [selectedDirector, setSelectedDirector] = useState<any>(null)
   const [isLoadingOfficers, setIsLoadingOfficers] = useState(false)
   const [showDirectorsSelection, setShowDirectorsSelection] = useState(false)
-  const [showYesShake, setShowYesShake] = useState(false)
 
   const otpCode = otpDigits.join("")
 
@@ -144,17 +143,7 @@ export default function AssessmentPage() {
         setCurrentQuestion(questionIndex)
       }
     }
-
-    // Trigger shake animation for "Yes" answer on first question
-    if (currentQuestion === 0) {
-      const timer = setTimeout(() => {
-        setShowYesShake(true)
-        setTimeout(() => setShowYesShake(false), 1000) // Stop shaking after 1 second
-      }, 500) // Start shaking after 500ms delay
-      
-      return () => clearTimeout(timer)
-    }
-  }, [searchParams, currentQuestion])
+  }, [searchParams, questions.length])
 
   // Sync slider and input values
   useEffect(() => {
@@ -1760,14 +1749,12 @@ export default function AssessmentPage() {
               {question.options.map((option, index) => {
                 const Icon = option.icon
                 const isSelected = answers[question.id]?.includes(index)
-                const isYesOption = currentQuestion === 0 && option.label === "Yes" && showYesShake
-
                 return (
                   <Card
                     key={index}
                     className={`cursor-pointer transition-all hover:shadow-md hover:border-primary/50 ${
                       isSelected ? "border-2 border-primary bg-white shadow-lg shadow-primary/20" : "border-border bg-white"
-                    } ${isYesOption ? "animate-shake" : ""}`}
+                    }`}
                     onClick={() => handleAnswer(index)}
                   >
                     <CardContent className="py-0 px-3">

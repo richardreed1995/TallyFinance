@@ -330,7 +330,7 @@ export function generateLeadNotificationHTML(data: LeadEmailData): string {
 
     <!-- Footer -->
     <div class="footer">
-      <p>Questions? Contact <a href="mailto:partners@sendlead.co">partners@sendlead.co</a></p>
+      <p>Questions? Contact <a href="mailto:richard@sendlead.co">richard@sendlead.co</a></p>
       <div class="submission-id">Submission ID: ${formatValue(data.submissionId)}</div>
       <p style="margin-top: 12px;">© ${new Date().getFullYear()} Sendlead. All rights reserved.</p>
     </div>
