@@ -93,8 +93,32 @@ export default function QualifiedResultsPage() {
 
     setLeadData(JSON.parse(storedLeadData))
 
-    if (typeof window !== "undefined" && (window as any).fbq) {
-      ;(window as any).fbq("track", "SubmitApplication")
+    const fireSubmitApplicationEvent = () => {
+      if (typeof window === "undefined") {
+        return false
+      }
+
+      const fbq = (window as any).fbq
+
+      if (typeof fbq === "function") {
+        fbq("trackCustom", "SubmitApplication")
+        return true
+      }
+
+      return false
+    }
+
+    if (!fireSubmitApplicationEvent()) {
+      let attempts = 0
+      const maxAttempts = 8
+      const interval = window.setInterval(() => {
+        attempts += 1
+        if (fireSubmitApplicationEvent() || attempts >= maxAttempts) {
+          window.clearInterval(interval)
+        }
+      }, 250)
+
+      return () => window.clearInterval(interval)
     }
   }, [router])
 
