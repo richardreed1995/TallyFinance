@@ -106,10 +106,8 @@ export default function AssessmentPage() {
       const savedSubmissionId = sessionStorage.getItem("submissionId")
       if (savedSubmissionId) {
         setSubmissionId(savedSubmissionId)
-        console.log("[v0] Using existing submission ID:", savedSubmissionId)
       } else {
         // Create new assessment record immediately
-        console.log("[v0] Creating new assessment record...")
         try {
           const result = await updateAssessmentProgress({
             currentQuestion: 0,
@@ -121,12 +119,9 @@ export default function AssessmentPage() {
             const newSubmissionId = result.data.id
             setSubmissionId(newSubmissionId)
             sessionStorage.setItem("submissionId", newSubmissionId)
-            console.log("[v0] Created new assessment record with ID:", newSubmissionId)
-          } else {
-            console.error("[v0] Failed to create assessment record:", result.error)
           }
         } catch (error) {
-          console.error("[v0] Error creating assessment record:", error)
+          // Silently handle initialization errors
         }
       }
     }
@@ -170,7 +165,10 @@ export default function AssessmentPage() {
       }
       
       if (Object.keys(updatedAnswers).length > 0) {
-        saveProgress(updatedAnswers)
+        // Save in background without blocking UI
+        saveProgress(updatedAnswers).catch((error) => {
+          console.error("[v0] Error saving progress in background:", error)
+        })
       }
     }
   }, [loanAmount, turnover, submissionId])
@@ -289,9 +287,8 @@ export default function AssessmentPage() {
               // We'll get full address details from getCompanyDetails if needed
             }
           })
-          console.log("[v0] Saved company info to database:", company.title)
         } catch (dbError) {
-          console.error("[v0] Error saving company info to database:", dbError)
+          // Silently handle save errors
         }
       }
       
@@ -312,9 +309,8 @@ export default function AssessmentPage() {
               companyTypeFull: details.company_type,
               // Add any other fields from the detailed company data
             })
-            console.log("[v0] Updated company details in database")
           } catch (dbError) {
-            console.error("[v0] Error updating company details:", dbError)
+            // Silently handle save errors
           }
         }
       }
@@ -331,9 +327,8 @@ export default function AssessmentPage() {
               submissionId: submissionId,
               companyOfficers: officersResult.data.items
             })
-            console.log("[v0] Saved all company officers to database:", officersResult.data.items.length, "officers")
           } catch (dbError) {
-            console.error("[v0] Error saving company officers:", dbError)
+            // Silently handle save errors
           }
         }
         
@@ -393,9 +388,8 @@ export default function AssessmentPage() {
           directorNationality: director.nationality,
           directorOccupation: director.occupation,
         })
-        console.log("[v0] Saved comprehensive director info to database:", director.name)
       } catch (dbError) {
-        console.error("[v0] Error saving director info:", dbError)
+        // Silently handle save errors
       }
     }
     
@@ -437,7 +431,7 @@ export default function AssessmentPage() {
         ...databaseFields
       })
     } catch (error) {
-      console.error("[v0] Error saving email to Supabase:", error)
+      // Silently handle save errors
     }
   }
 
@@ -483,15 +477,8 @@ export default function AssessmentPage() {
   }
 
   const saveProgress = async (updatedAnswers: Record<number, number[]>) => {
-    console.log("[v0] Saving progress to Supabase:", {
-      submissionId,
-      answers: updatedAnswers,
-      currentQuestion: currentQuestion + 1
-    })
-
     // Ensure we have a submission ID before trying to save
     if (!submissionId) {
-      console.log("[v0] No submission ID available, creating new assessment record...")
       try {
         const result = await updateAssessmentProgress({
           currentQuestion: currentQuestion + 1,
@@ -504,10 +491,9 @@ export default function AssessmentPage() {
           const newSubmissionId = result.data.id
           setSubmissionId(newSubmissionId)
           sessionStorage.setItem("submissionId", newSubmissionId)
-          console.log("[v0] Created new assessment record with ID:", newSubmissionId)
         }
       } catch (error) {
-        console.error("[v0] Error creating assessment record in saveProgress:", error)
+        // Silently handle initialization errors
       }
       return
     }
@@ -525,20 +511,8 @@ export default function AssessmentPage() {
       isCompleted: false,
       ...databaseFields
     })
-      .then((result) => {
-        console.log("[v0] Supabase save result:", result)
-        if (result.success) {
-          console.log("[v0] Successfully updated assessment progress")
-        }
-      })
       .catch((error) => {
-        console.error("[v0] Error in saveProgress:", error)
-        console.error("[v0] Full error details:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        })
+        // Silently handle save errors
       })
   }
 
@@ -659,15 +633,20 @@ export default function AssessmentPage() {
       
       setAnswers(newAnswers)
       
-      // Save immediately when answer is selected
-      await saveProgress(newAnswers)
+      // Save in background without blocking UI
+      saveProgress(newAnswers).catch(() => {
+        // Silently handle save errors
+      })
     } else {
       const updatedAnswers = { ...answers, [question.id]: [optionIndex] }
       setAnswers(updatedAnswers)
 
-      // Save immediately when answer is selected
-      await saveProgress(updatedAnswers)
+      // Save in background without blocking UI
+      saveProgress(updatedAnswers).catch(() => {
+        // Silently handle save errors
+      })
 
+      // Proceed immediately without waiting for save
       setTimeout(() => {
         // Check if this is the company type question and "Limited company" was selected
         if (question.id === 5 && optionIndex === 0) {
@@ -703,8 +682,11 @@ export default function AssessmentPage() {
 
   const handleContinue = async () => {
     // Save in background without blocking UI
-    await saveProgress(answers)
+    saveProgress(answers).catch((error) => {
+      console.error("[v0] Error saving progress in background:", error)
+    })
 
+    // Proceed immediately without waiting for save
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
     } else {
@@ -808,7 +790,7 @@ export default function AssessmentPage() {
           ...finalDatabaseFields
         })
       } catch (error) {
-        console.error("[v0] Error saving final data to Supabase:", error)
+        // Silently handle save errors
       }
       
       // Store name and phone in sessionStorage for results pages
@@ -929,7 +911,6 @@ export default function AssessmentPage() {
           setEmailError(result?.error || "This email address appears to be invalid. Please check and try again.")
         }
       } catch (err) {
-        console.error("[v0] Email verification failed", err)
         setEmailVerificationStatus("invalid")
         setEmailError("We couldn't verify your email right now. Please try again.")
       }
@@ -1668,7 +1649,10 @@ export default function AssessmentPage() {
                 onClick={() => {
                   const updatedAnswers = { ...answers, [question.id]: [0] } // Default to first option for scoring
                   setAnswers(updatedAnswers)
-                  saveProgress(updatedAnswers)
+                  // Save in background without blocking UI
+                  saveProgress(updatedAnswers).catch((error) => {
+                    console.error("[v0] Error saving progress in background:", error)
+                  })
                   
                   setTimeout(() => {
                     if (currentQuestion < questions.length - 1) {
@@ -1719,7 +1703,10 @@ export default function AssessmentPage() {
                 onClick={() => {
                   const updatedAnswers = { ...answers, [question.id]: [0] } // Default to first option for scoring
                   setAnswers(updatedAnswers)
-                  saveProgress(updatedAnswers)
+                  // Save in background without blocking UI
+                  saveProgress(updatedAnswers).catch((error) => {
+                    console.error("[v0] Error saving progress in background:", error)
+                  })
                   
                   setTimeout(() => {
                     if (currentQuestion < questions.length - 1) {
