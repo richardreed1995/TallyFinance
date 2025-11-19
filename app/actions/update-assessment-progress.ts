@@ -1,8 +1,9 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { sendLeadNotificationEmail, type AssessmentSubmission } from "./send-lead-notification"
+import { type AssessmentSubmission } from "./send-lead-notification"
 import { triggerQualifiedLeadWebhook } from "./trigger-qualified-lead-webhook"
+import { sendToSendlead } from "./send-to-sendlead"
 
 export interface ProgressUpdate {
   submissionId?: string
@@ -344,13 +345,15 @@ async function handleQualifiedLeadSideEffects(
 
   console.log("[v0] Lead qualified - triggering side effects")
 
-  const emailResult = await sendLeadNotificationEmail(submission)
-  if (!emailResult.success && !emailResult.skipped) {
-    console.error("[v0] Failed to send lead notification email:", emailResult.error)
-  } else if (emailResult.success && !emailResult.skipped) {
-    console.log("[v0] Lead notification email sent successfully")
+  // Send to Sendlead (primary integration - handles email notifications internally)
+  const sendleadResult = await sendToSendlead(submission)
+  if (!sendleadResult.success && !sendleadResult.skipped) {
+    console.error("[v0] Failed to send to Sendlead:", sendleadResult.error)
+  } else if (sendleadResult.success && !sendleadResult.skipped) {
+    console.log("[v0] Successfully sent to Sendlead - Lead ID:", sendleadResult.lead_id)
   }
 
+  // Make.com webhook (kept as backup)
   const webhookResult = await triggerQualifiedLeadWebhook(submission)
   if (!webhookResult.success && !webhookResult.skipped) {
     console.error("[v0] Failed to trigger lead webhook:", webhookResult.error)

@@ -402,6 +402,7 @@ async function testEmailNotification() {
   console.log('📋 Checking environment variables...')
   const apiKey = process.env.RESEND_API_KEY
   const recipientEmail = process.env.RESEND_LEAD_NOTIFICATION_EMAIL
+  const bccEmail = process.env.RESEND_LEAD_NOTIFICATION_BCC
   const senderEmail = process.env.RESEND_LEAD_NOTIFICATION_SENDER
   
   if (!apiKey) {
@@ -415,6 +416,12 @@ async function testEmailNotification() {
     process.exit(1)
   }
   console.log('✅ RESEND_LEAD_NOTIFICATION_EMAIL found:', recipientEmail)
+
+  if (!bccEmail) {
+    console.error('❌ RESEND_LEAD_NOTIFICATION_BCC not found in .env.local')
+    process.exit(1)
+  }
+  console.log('✅ RESEND_LEAD_NOTIFICATION_BCC found:', bccEmail)
   
   if (!senderEmail) {
     console.error('❌ RESEND_LEAD_NOTIFICATION_SENDER not found in .env.local')
@@ -469,6 +476,7 @@ async function testEmailNotification() {
     const { data, error } = await resend.emails.send({
       from: senderEmail,
       to: recipientEmail,
+      bcc: [bccEmail],
       subject: `🧪 TEST: New Qualified Lead - ${fullName} - ${emailData.loanAmount}`,
       html: html,
     })

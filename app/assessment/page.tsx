@@ -106,23 +106,6 @@ export default function AssessmentPage() {
       const savedSubmissionId = sessionStorage.getItem("submissionId")
       if (savedSubmissionId) {
         setSubmissionId(savedSubmissionId)
-      } else {
-        // Create new assessment record immediately
-        try {
-          const result = await updateAssessmentProgress({
-            currentQuestion: 0,
-            answers: {},
-            isCompleted: false
-          })
-          
-          if (result.success && result.data) {
-            const newSubmissionId = result.data.id
-            setSubmissionId(newSubmissionId)
-            sessionStorage.setItem("submissionId", newSubmissionId)
-          }
-        } catch (error) {
-          // Silently handle initialization errors
-        }
       }
     }
 
@@ -477,14 +460,21 @@ export default function AssessmentPage() {
   }
 
   const saveProgress = async (updatedAnswers: Record<number, number[]>) => {
+    const questionsAnswered = Object.keys(updatedAnswers)
+      .map(key => parseInt(key))
+      .sort((a, b) => a - b)
+
+    const databaseFields = mapAnswersToDatabaseFields(updatedAnswers)
+
     // Ensure we have a submission ID before trying to save
     if (!submissionId) {
       try {
         const result = await updateAssessmentProgress({
           currentQuestion: currentQuestion + 1,
           answers: updatedAnswers,
-          questionsAnswered: Object.keys(updatedAnswers).map(key => parseInt(key)).sort((a, b) => a - b),
-          isCompleted: false
+          questionsAnswered,
+          isCompleted: false,
+          ...databaseFields
         })
         
         if (result.success && result.data) {
@@ -497,13 +487,6 @@ export default function AssessmentPage() {
       }
       return
     }
-
-    // Track which questions have been answered in order
-    const questionsAnswered = Object.keys(updatedAnswers)
-      .map(key => parseInt(key))
-      .sort((a, b) => a - b) // Sort by question number
-
-    const databaseFields = mapAnswersToDatabaseFields(updatedAnswers)
 
     updateAssessmentProgress({
       submissionId: submissionId, // Always use existing submission ID
@@ -657,24 +640,7 @@ export default function AssessmentPage() {
         if (currentQuestion < questions.length - 1) {
           setCurrentQuestion(currentQuestion + 1)
         } else {
-          // Check qualification and route accordingly
-          const businessOwnerAnswer = answers[1]?.[0]
-          const tradingTimeAnswer = answers[3]?.[0]
-          const companyTypeAnswer = answers[5]?.[0]
-          
-          const isBusinessOwner = businessOwnerAnswer === 0
-          const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 // Not "0-11 months" (12+ months)
-          const isLimitedCompany = companyTypeAnswer === 0
-          const hasTurnover = turnover !== null && turnover >= 100000 // Use turnover input field, minimum £100k
-          
-          const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
-          
-          if (isQualified) {
-            setShowLeadCapture(true)
-          } else {
-            // Not qualified - go directly to results
-            calculateScoreAndRoute()
-          }
+          setShowLeadCapture(true)
         }
       }, 200)
     }
@@ -690,24 +656,7 @@ export default function AssessmentPage() {
     if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1)
     } else {
-      // Check qualification and route accordingly
-      const businessOwnerAnswer = answers[1]?.[0]
-      const tradingTimeAnswer = answers[3]?.[0]
-      const companyTypeAnswer = answers[5]?.[0]
-      
-      const isBusinessOwner = businessOwnerAnswer === 0
-      const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 // Not "0-11 months" (12+ months)
-      const isLimitedCompany = companyTypeAnswer === 0
-      const hasTurnover = turnover !== null && turnover >= 100000 // Use turnover input field, minimum £100k
-      
-      const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
-      
-      if (isQualified) {
-        setShowLeadCapture(true)
-      } else {
-        // Not qualified - go directly to results
-        calculateScoreAndRoute()
-      }
+      setShowLeadCapture(true)
     }
   }
 
@@ -953,9 +902,18 @@ export default function AssessmentPage() {
   }
 
   const getLeadStepTitle = () => {
+    const businessOwnerAnswer = answers[1]?.[0]
+    const tradingTimeAnswer = answers[3]?.[0]
+    const companyTypeAnswer = answers[5]?.[0]
+    const isBusinessOwner = businessOwnerAnswer === 0 
+    const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 
+    const isLimitedCompany = companyTypeAnswer === 0 
+    const hasTurnover = turnover !== null && turnover >= 100000 
+    const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
+
     switch (currentLeadStep) {
       case 0:
-        return "Congratulations 🎉"
+        return isQualified ? "Congratulations 🎉" : "Almost there..."
       case 1:
         return "Let's start with your name"
       case 2:
@@ -1118,15 +1076,26 @@ export default function AssessmentPage() {
                     <h3 className="font-serif text-xl mb-2">{getLeadStepTitle()}</h3>
                     {currentLeadStep === 0 && (
                       <div className="mb-6">
-                        <div className="bg-muted/30 rounded-lg p-6 mb-4">
-                          <h4 className="font-semibold text-lg mb-3">Your Pre-Approved Loan</h4>
-                          <div className="text-center">
-                            <div className="text-3xl font-bold text-primary mb-2">£{loanAmount?.toLocaleString() || '0'}</div>
+                        {isQualified ? (
+                          <>
+                            <div className="bg-muted/30 rounded-lg p-6 mb-4">
+                              <h4 className="font-semibold text-lg mb-3">Your Pre-Approved Loan</h4>
+                              <div className="text-center">
+                                <div className="text-3xl font-bold text-primary mb-2">£{loanAmount?.toLocaleString() || '0'}</div>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Brilliant! You could get your £{loanAmount?.toLocaleString() || '0'} loan in under 4hrs. Just a few quick details and we'll send your personalised quote straight over.
+                            </p>
+                          </>
+                        ) : (
+                          <div className="bg-muted/30 rounded-lg p-6 mb-4">
+                            <h4 className="font-semibold text-lg mb-3">Assessment Complete</h4>
+                            <p className="text-sm text-muted-foreground">
+                              We have analysed your details. Please provide your contact information to receive your personalised funding options.
+                            </p>
                           </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-4">
-                          Brilliant! You could get your £{loanAmount?.toLocaleString() || '0'} loan in under 4hrs. Just a few quick details and we'll send your personalised quote straight over.
-                        </p>
+                        )}
                       </div>
                     )}
                     {getLeadStepDescription() && (

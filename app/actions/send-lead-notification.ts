@@ -76,6 +76,13 @@ function formatTurnoverRange(turnover: number): string {
 
 export async function sendLeadNotificationEmail(submission: AssessmentSubmission) {
   try {
+    // Check if email notifications are enabled
+    const emailNotificationsEnabled = process.env.ENABLE_EMAIL_NOTIFICATIONS === 'true'
+    if (!emailNotificationsEnabled) {
+      console.log('[Lead Notification] Email notifications disabled - skipping')
+      return { success: true, skipped: true }
+    }
+
     // Only send emails for qualified leads
     if (submission.qualification_status !== 'qualified') {
       console.log('[Lead Notification] Skipping email - lead not qualified')

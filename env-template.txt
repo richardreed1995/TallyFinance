@@ -26,3 +26,8 @@ RESEND_LEAD_NOTIFICATION_SENDER="YourCompany <noreply@notification.yourdomain.co
 
 # Make.com Webhook Configuration
 MAKE_WEBHOOK_URL=https://hook.make.com/your_webhook_id_here
+
+# Sendlead Integration Configuration
+# Get these from your Sendlead campaign settings
+SENDLEAD_WEBHOOK_URL=https://api.sendlead.co/webhook/v1/campaign/ingest
+SENDLEAD_CAMPAIGN_TOKEN=your_sendlead_campaign_token_here
