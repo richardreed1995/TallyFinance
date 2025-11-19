@@ -133,7 +133,7 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
 
       console.log("[v0] Successfully updated assessment:", updateResult.data)
       
-      await handleQualifiedLeadSideEffects(updateResult.data, data.qualificationStatus)
+      await handleLeadSideEffects(updateResult.data, data.qualificationStatus)
       
       return { success: true, data: updateResult.data }
     } else {
@@ -151,7 +151,7 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
 
       console.log("[v0] Successfully created assessment:", insertResult.data)
       
-      await handleQualifiedLeadSideEffects(insertResult.data, data.qualificationStatus)
+      await handleLeadSideEffects(insertResult.data, data.qualificationStatus)
       
       return { success: true, data: insertResult.data }
     }
@@ -329,7 +329,7 @@ function normalizeSubmissionRecord<T extends Record<string, any> | null>(
 }
 
 
-async function handleQualifiedLeadSideEffects(
+async function handleLeadSideEffects(
   submission: AssessmentSubmission,
   qualificationStatus?: string
 ) {
@@ -338,14 +338,10 @@ async function handleQualifiedLeadSideEffects(
     submission.qualification_status ??
     (submission as any)?.qualificationStatus
 
-  if (effectiveStatus !== "qualified") {
-    console.log("[v0] Lead not qualified - skipping side effects")
-    return
-  }
-
-  console.log("[v0] Lead qualified - triggering side effects")
+  console.log(`[v0] Processing side effects for lead (Status: ${effectiveStatus})`)
 
   // Send to Sendlead (primary integration - handles email notifications internally)
+  // Now sends both qualified and unqualified leads
   const sendleadResult = await sendToSendlead(submission)
   if (!sendleadResult.success && !sendleadResult.skipped) {
     console.error("[v0] Failed to send to Sendlead:", sendleadResult.error)
@@ -354,6 +350,7 @@ async function handleQualifiedLeadSideEffects(
   }
 
   // Make.com webhook (kept as backup)
+  // Note: triggerQualifiedLeadWebhook still checks for "qualified" status internally
   const webhookResult = await triggerQualifiedLeadWebhook(submission)
   if (!webhookResult.success && !webhookResult.skipped) {
     console.error("[v0] Failed to trigger lead webhook:", webhookResult.error)

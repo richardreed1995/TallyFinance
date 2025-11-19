@@ -27,11 +27,11 @@ export async function sendToSendlead(
       return { success: true, skipped: true }
     }
 
-    // Only send qualified leads
-    if (submission.qualification_status !== "qualified") {
-      console.log("[Sendlead] Skipping - lead not qualified")
-      return { success: true, skipped: true }
-    }
+    // Send both qualified and unqualified leads
+    // if (submission.qualification_status !== "qualified") {
+    //   console.log("[Sendlead] Skipping - lead not qualified")
+    //   return { success: true, skipped: true }
+    // }
 
     // Build the Sendlead payload according to their webhook format
     const payload = {
