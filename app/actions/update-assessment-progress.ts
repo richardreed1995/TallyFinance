@@ -118,6 +118,23 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
     if (data.directorOccupation !== undefined) updateData.director_occupation = data.directorOccupation
 
     if (data.submissionId) {
+      // Check if already completed to prevent duplicate webhooks
+      let wasAlreadyCompleted = false
+      try {
+        const { data: existing } = await supabase
+          .from("assessment_submissions")
+          .select("is_completed")
+          .eq("id", data.submissionId)
+          .single()
+        
+        if (existing && existing.is_completed) {
+          wasAlreadyCompleted = true
+          console.log("[v0] Assessment already completed, skipping duplicate webhook trigger")
+        }
+      } catch (err) {
+        // Ignore error, assume not completed if fetch fails
+      }
+
       // Update existing submission
       console.log("[v0] Updating existing submission with data:", updateData)
       const updateResult = await performAssessmentMutation({
@@ -133,7 +150,10 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
 
       console.log("[v0] Successfully updated assessment:", updateResult.data)
       
-      await handleLeadSideEffects(updateResult.data, data.qualificationStatus)
+      // Only fire webhook if it's marked completed AND it wasn't already completed
+      if (data.isCompleted === true && !wasAlreadyCompleted) {
+        await handleLeadSideEffects(updateResult.data, data.qualificationStatus)
+      }
       
       return { success: true, data: updateResult.data }
     } else {
@@ -151,7 +171,9 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
 
       console.log("[v0] Successfully created assessment:", insertResult.data)
       
-      await handleLeadSideEffects(insertResult.data, data.qualificationStatus)
+      if (data.isCompleted === true) {
+        await handleLeadSideEffects(insertResult.data, data.qualificationStatus)
+      }
       
       return { success: true, data: insertResult.data }
     }

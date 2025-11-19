@@ -40,6 +40,7 @@ export default function AssessmentPage() {
   const [otpError, setOtpError] = useState("")
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const isSubmittingRef = useRef(false)
   const [resendCountdown, setResendCountdown] = useState(0)
   const [showLeadCapture, setShowLeadCapture] = useState(false)
   const [currentLeadStep, setCurrentLeadStep] = useState(0)
@@ -470,8 +471,6 @@ export default function AssessmentPage() {
     if (!submissionId) {
       try {
         const result = await updateAssessmentProgress({
-          currentQuestion: currentQuestion + 1,
-          answers: updatedAnswers,
           questionsAnswered,
           isCompleted: false,
           ...databaseFields
@@ -499,7 +498,7 @@ export default function AssessmentPage() {
       })
   }
 
-  const calculateScoreAndRoute = () => {
+  const calculateScoreAndRoute = async () => {
     const totalScore = Object.entries(answers).reduce((sum, [qId, optionIndices]) => {
       const q = questions.find((qu) => qu.id === Number.parseInt(qId))
       if (!q) return sum
@@ -569,18 +568,22 @@ export default function AssessmentPage() {
 
     const finalDatabaseFields = mapAnswersToDatabaseFields(answers)
     
-    updateAssessmentProgress({
-      submissionId: submissionId || undefined,
-      score: totalScore,
-      qualificationStatus: isQualified ? "qualified" : "not-qualified",
-      email: email,
-      firstName: name.split(' ')[0] || undefined,
-      lastName: name.split(' ').slice(1).join(' ') || undefined,
-      phone: phone,
-      consentGiven: true,
-      isCompleted: true,
-      ...finalDatabaseFields
-    })
+    try {
+      await updateAssessmentProgress({
+        submissionId: submissionId || undefined,
+        score: totalScore,
+        qualificationStatus: isQualified ? "qualified" : "not-qualified",
+        email: email,
+        firstName: name.split(' ')[0] || undefined,
+        lastName: name.split(' ').slice(1).join(' ') || undefined,
+        phone: phone,
+        consentGiven: true,
+        isCompleted: true,
+        ...finalDatabaseFields
+      })
+    } catch (error) {
+      console.error("[v0] Error saving final assessment progress:", error)
+    }
 
     // Store data in sessionStorage for results pages
     sessionStorage.setItem("assessmentScore", totalScore.toString())
@@ -718,43 +721,37 @@ export default function AssessmentPage() {
       return
     }
 
+    if (isSubmittingRef.current || isVerifyingOtp) {
+      return
+    }
+
+    isSubmittingRef.current = true
     setIsVerifyingOtp(true)
     setOtpError("")
 
-    const result = await verifyOTP(phone, otpCode)
+    try {
+      const result = await verifyOTP(phone, otpCode)
 
-    if (result.success) {
-      // OTP verified successfully - save name and phone to Supabase
-      try {
-        const finalDatabaseFields = mapAnswersToDatabaseFields(answers)
+      if (result.success) {
+        // OTP verified successfully - save name and phone to Supabase
         
-        await updateAssessmentProgress({
-          submissionId: submissionId || undefined,
-          email: email,
-          firstName: name.split(' ')[0] || undefined,
-          lastName: name.split(' ').slice(1).join(' ') || undefined,
-          phone: phone,
-          consentGiven: true,
-          isCompleted: true,
-          ...finalDatabaseFields
-        })
-      } catch (error) {
-        // Silently handle save errors
+        // Store name and phone in sessionStorage for results pages
+        sessionStorage.setItem("userName", name)
+        sessionStorage.setItem("userPhone", phone)
+        
+        // Proceed to results page
+        await calculateScoreAndRoute()
+        stopResendCountdown()
+      } else {
+        setOtpError(result.error || "Invalid verification code. Please try again.")
+        setIsVerifyingOtp(false)
+        isSubmittingRef.current = false
       }
-      
-      // Store name and phone in sessionStorage for results pages
-      sessionStorage.setItem("userName", name)
-      sessionStorage.setItem("userPhone", phone)
-      
-      // Proceed to results page
-      calculateScoreAndRoute()
-      stopResendCountdown()
-    } else {
-      setOtpError(result.error || "Invalid verification code. Please try again.")
+    } catch (error) {
+      setOtpError("An unexpected error occurred. Please try again.")
+      setIsVerifyingOtp(false)
+      isSubmittingRef.current = false
     }
-
-    setIsVerifyingOtp(false)
-    stopResendCountdown()
   }
 
   const handleOtpDigitChange = (index: number, value: string) => {
