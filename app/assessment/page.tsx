@@ -512,7 +512,7 @@ export default function AssessmentPage() {
     // 1. Yes business owner (question 1)
     // 2. 12+ months trading (question 3) 
     // 3. Limited company (question 5)
-    // 4. Annual turnover over £100k (question 4)
+    // 4. Annual turnover over £360k (question 4)
     const businessOwnerAnswer = answers[1]?.[0]
     const tradingTimeAnswer = answers[3]?.[0]
     const companyTypeAnswer = answers[5]?.[0]
@@ -520,7 +520,7 @@ export default function AssessmentPage() {
     const isBusinessOwner = businessOwnerAnswer === 0 // "Yes" option
     const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 // Not "0-11 months" (12+ months)
     const isLimitedCompany = companyTypeAnswer === 0 // "Limited company" option
-    const hasTurnover = turnover !== null && turnover >= 100000 // Use turnover input field, minimum £100k
+    const hasTurnover = turnover !== null && turnover >= 360000 // Use turnover input field, minimum £360k
     
     const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
 
@@ -905,7 +905,7 @@ export default function AssessmentPage() {
     const isBusinessOwner = businessOwnerAnswer === 0 
     const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 
     const isLimitedCompany = companyTypeAnswer === 0 
-    const hasTurnover = turnover !== null && turnover >= 100000 
+    const hasTurnover = turnover !== null && turnover >= 360000 
     const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
 
     switch (currentLeadStep) {
@@ -953,7 +953,7 @@ export default function AssessmentPage() {
     // 1. Yes business owner (question 1)
     // 2. 12+ months trading (question 3) 
     // 3. Limited company (question 5)
-    // 4. Annual turnover over £100k (question 4)
+    // 4. Annual turnover over £360k (question 4)
     const businessOwnerAnswer = answers[1]?.[0]
     const tradingTimeAnswer = answers[3]?.[0]
     const companyTypeAnswer = answers[5]?.[0]
@@ -961,7 +961,7 @@ export default function AssessmentPage() {
     const isBusinessOwner = businessOwnerAnswer === 0 // "Yes" option
     const hasTradingTime = tradingTimeAnswer !== undefined && tradingTimeAnswer !== 2 // Not "0-11 months" (12+ months)
     const isLimitedCompany = companyTypeAnswer === 0 // "Limited company" option
-    const hasTurnover = turnover !== null && turnover >= 100000 // Use turnover input field, minimum £100k
+    const hasTurnover = turnover !== null && turnover >= 360000 // Use turnover input field, minimum £360k
     
     const isQualified = isBusinessOwner && hasTradingTime && isLimitedCompany && hasTurnover
 

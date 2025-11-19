@@ -38,8 +38,8 @@ export default function UnqualifiedResultsPage() {
     if (answers[5]?.[0] !== 0) {
       reasons.push("Not a limited company")
     }
-    if (data.turnover === null || data.turnover < 100000) {
-      reasons.push("Annual turnover under £100,000")
+    if (data.turnover === null || data.turnover < 360000) {
+      reasons.push("Annual turnover under £360,000")
     }
 
     setQualificationReasons(reasons)
