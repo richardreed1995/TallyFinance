@@ -59,9 +59,12 @@ export async function sendToSendlead(
 
       // Source tracking
       source: submission.utm_source || "tally",
-      medium: submission.utm_medium,
-      campaign: submission.utm_campaign,
-      click_id: submission.click_id,
+      utm_source: submission.utm_source,
+      utm_medium: submission.utm_medium,
+      utm_campaign: submission.utm_campaign,
+      utm_term: submission.utm_term,
+      utm_content: submission.utm_content,
+      facebook_click_id: submission.click_id,
       industry: "business_loan",
 
       // Companies House data
