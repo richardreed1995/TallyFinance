@@ -58,7 +58,10 @@ export async function sendToSendlead(
       consent_given: true, // They completed the form
 
       // Source tracking
-      source: "tally",
+      source: submission.utm_source || "tally",
+      medium: submission.utm_medium,
+      campaign: submission.utm_campaign,
+      click_id: submission.click_id,
       industry: "business_loan",
 
       // Companies House data

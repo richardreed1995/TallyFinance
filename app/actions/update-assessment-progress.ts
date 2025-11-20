@@ -57,6 +57,14 @@ export interface ProgressUpdate {
   directorAppointedDate?: string
   directorNationality?: string
   directorOccupation?: string
+  
+  // Tracking information
+  utmSource?: string
+  utmMedium?: string
+  utmCampaign?: string
+  utmTerm?: string
+  utmContent?: string
+  clickId?: string
 }
 
 export async function updateAssessmentProgress(data: ProgressUpdate) {
@@ -116,6 +124,14 @@ export async function updateAssessmentProgress(data: ProgressUpdate) {
     if (data.directorAppointedDate !== undefined) updateData.director_appointed_date = data.directorAppointedDate
     if (data.directorNationality !== undefined) updateData.director_nationality = data.directorNationality
     if (data.directorOccupation !== undefined) updateData.director_occupation = data.directorOccupation
+
+    // Tracking information
+    if (data.utmSource !== undefined) updateData.utm_source = data.utmSource
+    if (data.utmMedium !== undefined) updateData.utm_medium = data.utmMedium
+    if (data.utmCampaign !== undefined) updateData.utm_campaign = data.utmCampaign
+    if (data.utmTerm !== undefined) updateData.utm_term = data.utmTerm
+    if (data.utmContent !== undefined) updateData.utm_content = data.utmContent
+    if (data.clickId !== undefined) updateData.click_id = data.clickId
 
     if (data.submissionId) {
       // Check if already completed to prevent duplicate webhooks

@@ -57,6 +57,33 @@ export default function AssessmentPage() {
   const [companySearchError, setCompanySearchError] = useState("")
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
   
+  // Tracking parameters
+  const [trackingParams, setTrackingParams] = useState<{
+    utmSource?: string
+    utmMedium?: string
+    utmCampaign?: string
+    utmTerm?: string
+    utmContent?: string
+    clickId?: string
+  }>({})
+
+  useEffect(() => {
+    // Capture tracking parameters from URL
+    const params = {
+      utmSource: searchParams.get("utm_source") || undefined,
+      utmMedium: searchParams.get("utm_medium") || undefined,
+      utmCampaign: searchParams.get("utm_campaign") || undefined,
+      utmTerm: searchParams.get("utm_term") || undefined,
+      utmContent: searchParams.get("utm_content") || undefined,
+      clickId: searchParams.get("click_id") || searchParams.get("fbclid") || searchParams.get("gclid") || undefined
+    }
+    
+    // Only set if we have at least one param
+    if (Object.values(params).some(v => v !== undefined)) {
+      setTrackingParams(params)
+    }
+  }, [searchParams])
+  
   // Directors selection states
   const [companyOfficers, setCompanyOfficers] = useState<any[]>([])
   const [selectedDirector, setSelectedDirector] = useState<any>(null)
@@ -412,7 +439,8 @@ export default function AssessmentPage() {
       await updateAssessmentProgress({
         submissionId: submissionId || undefined,
         email: emailAddress,
-        ...databaseFields
+        ...databaseFields,
+        ...trackingParams
       })
     } catch (error) {
       // Silently handle save errors
@@ -473,7 +501,8 @@ export default function AssessmentPage() {
         const result = await updateAssessmentProgress({
           questionsAnswered,
           isCompleted: false,
-          ...databaseFields
+          ...databaseFields,
+          ...trackingParams
         })
         
         if (result.success && result.data) {
@@ -491,7 +520,8 @@ export default function AssessmentPage() {
       submissionId: submissionId, // Always use existing submission ID
       questionsAnswered: questionsAnswered,
       isCompleted: false,
-      ...databaseFields
+      ...databaseFields,
+      ...trackingParams
     })
       .catch((error) => {
         // Silently handle save errors
@@ -579,7 +609,8 @@ export default function AssessmentPage() {
         phone: phone,
         consentGiven: true,
         isCompleted: true,
-        ...finalDatabaseFields
+        ...finalDatabaseFields,
+        ...trackingParams
       })
     } catch (error) {
       console.error("[v0] Error saving final assessment progress:", error)

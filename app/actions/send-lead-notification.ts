@@ -31,6 +31,12 @@ export interface AssessmentSubmission {
   question_8_homeowner?: boolean
   score?: number
   qualification_status?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_term?: string
+  utm_content?: string
+  click_id?: string
 }
 
 function formatCurrency(amount: number): string {
